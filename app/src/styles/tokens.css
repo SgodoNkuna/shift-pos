@@ -1,0 +1,10 @@
+/* Vault look, copied from the approved prototype */
+:root {
+  --bg: #0c0f12; --panel: #13171c; --steel: #1a1f26; --steel-2: #222931; --line: #2f3842; --line-2: #3c4651;
+  --fg: #e9edf1; --muted: #8c98a5; --accent: #d4a64c; --accent-ink: #1b1406;
+  --ok: #4cbf8a; --bad: #e5564e; --warn: #e8913a; --wait: #7fa9e0;
+  --f-display: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  --f-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --f-num: "IBM Plex Mono", ui-monospace, Menlo, Consolas, monospace;
+  color-scheme: dark;
+}

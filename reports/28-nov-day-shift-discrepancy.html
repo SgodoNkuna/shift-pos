@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Shift Sheet Discrepancy</title>
+<style>
+  :root { --ink:#16181c; --muted:#5b616b; --line:#d5d9df; --accent:#c8102e; --bg:#ffffff; --soft:#f3f4f6; }
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:14px/1.5 "Helvetica Neue", Arial, sans-serif; }
+  .page { max-width:720px; margin:0 auto; padding:36px 40px; }
+  .bar { border-top:6px solid var(--ink); padding-top:14px; display:flex; justify-content:space-between; align-items:baseline; }
+  h1 { font-size:22px; margin:0; letter-spacing:.02em; text-transform:uppercase; }
+  .tag { font-size:11px; font-weight:700; letter-spacing:.08em; text-transform:uppercase; color:#fff; background:var(--accent); padding:3px 8px; }
+  .meta { color:var(--muted); margin:6px 0 22px; }
+  h2 { font-size:13px; text-transform:uppercase; letter-spacing:.08em; margin:26px 0 8px; border-bottom:1px solid var(--line); padding-bottom:4px; }
+  table { width:100%; border-collapse:collapse; margin:6px 0; }
+  th, td { text-align:left; padding:7px 10px; border-bottom:1px solid var(--line); }
+  th { background:var(--soft); font-size:12px; text-transform:uppercase; letter-spacing:.05em; }
+  td.num, th.num { text-align:right; font-variant-numeric:tabular-nums; }
+  tr.flag td { font-weight:700; color:var(--accent); }
+  .box { background:var(--soft); border-left:4px solid var(--ink); padding:12px 14px; margin:10px 0; }
+  ol, ul { margin:6px 0; padding-left:20px; }
+  .sign { margin-top:30px; display:grid; grid-template-columns:1fr 1fr; gap:24px; }
+  .sign div { border-top:1px solid var(--ink); padding-top:4px; color:var(--muted); font-size:12px; }
+  .foot { margin-top:28px; color:var(--muted); font-size:11px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="bar"><h1>Shift sheet discrepancy</h1><span class="tag">For review</span></div>
+  <p class="meta">Sheet: <b>Day shift, 28 November</b> &nbsp;·&nbsp; Report date: 23 November 2026 &nbsp;·&nbsp; Flagged by: ______________________</p>
+
+  <h2>Summary</h2>
+  <div class="box">
+    The total sales on the 28 November day-shift sheet are <b>R295 higher</b> than the product sales written on the same sheet.
+    The sheet does not show what the R295 was for. I did not fill in this sheet. I am flagging it so it can be checked.
+    This is a question about the record, not an accusation against anyone.
+  </div>
+
+  <h2>Figures as written on the sheet</h2>
+  <table>
+    <tr><th>Line on sheet</th><th class="num">Amount</th></tr>
+    <tr><td>Product sales subtotal ("Sales")</td><td class="num">R2,610</td></tr>
+    <tr><td>Beverages – total sales</td><td class="num">R0</td></tr>
+    <tr><td>Rolling material – total sales</td><td class="num">R0</td></tr>
+    <tr><td>Total sales</td><td class="num">R2,905</td></tr>
+    <tr class="flag"><td>Difference with no matching product entry</td><td class="num">R295</td></tr>
+  </table>
+
+  <h2>How the rest of the sheet adds up</h2>
+  <table>
+    <tr><th>Calculation</th><th class="num">Result</th></tr>
+    <tr><td>Card sales (R2,340 + R30)</td><td class="num">R2,370</td></tr>
+    <tr><td>Total expenses (R20 + R20)</td><td class="num">R40</td></tr>
+    <tr><td>Cash on hand using total sales: R2,905 − R40 − R2,370</td><td class="num">R495 ✓ matches sheet</td></tr>
+    <tr><td>Cash on hand if total sales were R2,610: R2,610 − R40 − R2,370</td><td class="num">R200</td></tr>
+  </table>
+  <p>The written cash on hand (R495) only works if the R295 was really taken. So the question is <b>what was sold for R295</b>. It is not a simple arithmetic slip.</p>
+
+  <h2>Points to note</h2>
+  <ul>
+    <li>R295 ends in 5. Most items on the sheet are priced in multiples of R10. Only Monster and Powerade are R25, and Beverages shows no sales that shift.</li>
+    <li>The product rows I could check do add up correctly (for example, Outdoor: 44 + 28 − 59 = 13 sold × R20 = R260; Super Cheese: 17 + 34 − 25 = 26 × R30 = R780).</li>
+    <li>These figures come from a photo of handwriting. Please compare them with the original sheet.</li>
+  </ul>
+
+  <h2>Questions to clear it up</h2>
+  <ol>
+    <li>Was the R495 cash on hand physically counted, or worked out from the formula?</li>
+    <li>Was anything sold that day that is not on the product list (e.g. a drink or another item)?</li>
+    <li>Does the card machine's end-of-day slip for 28 November show R2,370?</li>
+    <li>Who filled in and checked this sheet at handover?</li>
+  </ol>
+
+  <h2>What happens going forward</h2>
+  <p>The new shift app will work out every total from the individual entries. A total that doesn't match its lines will be flagged automatically at clock-out.</p>
+
+  <div class="sign">
+    <div>Reviewed by (Manager) &nbsp;/&nbsp; date</div>
+    <div>Reviewed by (Boss) &nbsp;/&nbsp; date</div>
+  </div>
+  <p class="foot">Prepared from photographs of the paper shift sheets. Amounts in South African rand.</p>
+</div>
+</body>
+</html>

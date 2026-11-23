@@ -1,0 +1,647 @@
+<title>Shift POS Walkthrough</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: walkthrough script on the left, employee phone and boss phone side by side; on narrow screens the script sits on top and one phone shows at a time */
+:root{
+  --bg:#0c0f12; --panel:#13171c; --steel:#1a1f26; --steel-2:#222931; --line:#2f3842; --line-2:#3c4651;
+  --fg:#e9edf1; --muted:#8c98a5; --accent:#d4a64c; --accent-ink:#1b1406;
+  --ok:#4cbf8a; --bad:#e5564e; --warn:#e8913a; --wait:#7fa9e0;
+  --paper:#eef0f2; --paper-ink:#1c1f23; --paper-line:#c9ced4;
+  --f-display:"Barlow Condensed","Arial Narrow",Arial,sans-serif;
+  --f-body:"Inter",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-num:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+html,body{background:var(--bg)}
+body{color:var(--fg);font:14px/1.45 var(--f-body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:20px 40px}
+button{font:inherit;color:inherit;cursor:pointer}
+table{font:inherit;color:inherit}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.num{font-family:var(--f-num);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)} .small{font-size:12px}
+
+.stage{display:grid;grid-template-columns:minmax(260px,320px) 360px 360px;gap:28px;justify-content:center;align-items:start;max-width:1180px;margin:0 auto}
+.switch{display:none}
+@media (max-width:1099px){
+  .stage{grid-template-columns:minmax(0,1fr);justify-items:center;gap:16px}
+  .tour{width:100%;max-width:520px;position:static!important}
+  .switch{display:flex;gap:6px;width:100%;max-width:380px}
+  .stage[data-view="staff"] #bossCol,.stage[data-view="boss"] #staffCol{display:none}
+  .steps{display:none}
+}
+
+/* Tour panel */
+.tour{position:sticky;top:calc(env(safe-area-inset-top,0px) + 16px);display:flex;flex-direction:column;gap:14px}
+.eyebrow{font:600 12px/1 var(--f-display);letter-spacing:.16em;text-transform:uppercase;color:var(--accent)}
+.tour h1{font:700 34px/1 var(--f-display);letter-spacing:.02em;text-transform:uppercase;margin:0}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px}
+.stepno{font:500 12px var(--f-num);color:var(--muted)}
+.tour h2{font:700 22px/1.1 var(--f-display);text-transform:uppercase;letter-spacing:.03em;margin:6px 0 8px;text-wrap:balance}
+.tour p{margin:0;color:#c9d1d9}
+.prog{height:4px;background:var(--steel-2);border-radius:2px;overflow:hidden;margin-top:14px}
+.prog i{display:block;height:100%;background:var(--accent);transition:width .4s ease}
+.ctrls{display:flex;gap:8px;margin-top:14px}
+.ctrls .blk{flex:1}
+.math{font:12px/1.6 var(--f-num);color:var(--muted)}
+.math b{color:var(--fg);font-weight:500}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:2px}
+.steps button{width:100%;text-align:left;background:none;border:0;padding:6px 8px;border-radius:4px;color:var(--muted);display:flex;gap:10px;font-size:13px}
+.steps button .num{width:18px;color:var(--line-2)}
+.steps button.on{background:var(--steel);color:var(--fg)} .steps button.on .num{color:var(--accent)}
+.steps button.done{color:#b4bec8}
+
+/* Phones */
+.col{display:flex;flex-direction:column;gap:8px;align-items:center;width:100%}
+.plabel{font:600 13px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.phone{width:360px;max-width:100%;height:720px;background:var(--panel);border:1px solid var(--line-2);border-radius:30px;box-shadow:0 0 0 6px #080a0c,0 24px 60px rgba(0,0,0,.55);overflow:hidden;display:flex;flex-direction:column;position:relative}
+@media (max-width:1099px){.phone{width:100%;max-width:380px;height:min(720px,max(600px,calc(100dvh - 180px)))}}
+.sbar{display:flex;justify-content:space-between;align-items:center;padding:12px 20px 8px;font:500 12px var(--f-num);color:var(--muted)}
+.net{display:flex;align-items:center;gap:6px;font-family:var(--f-display);letter-spacing:.12em;text-transform:uppercase}
+.net i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(76,191,138,.18)}
+.app{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.screen{flex:1;min-height:0;overflow:auto}
+.screen.flex{display:flex;flex-direction:column;overflow:hidden}
+.enter{animation:scrIn .3s ease-out}
+@keyframes scrIn{from{opacity:0;transform:translateX(16px)}}
+
+.hdr{padding:6px 18px 14px;border-bottom:1px solid var(--line)}
+.hdr h2{font:700 26px/1 var(--f-display);text-transform:uppercase;letter-spacing:.03em;margin:6px 0 4px}
+.pad{padding:14px 18px}
+.stack{display:flex;flex-direction:column;gap:12px}
+.note{background:var(--steel);border-left:3px solid var(--accent);padding:10px 12px;border-radius:4px;font-size:13px;color:#cfd6dd}
+.grp{display:flex;flex-direction:column}
+.gl{font:600 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);padding:6px 0 4px;border-bottom:1px solid var(--line)}
+.row{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--steel-2);font-size:13px}
+.row.big{font-size:15px;border:1px solid var(--line);padding:12px;border-radius:6px}
+.lbl{font:600 12px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+
+.blk{min-height:50px;padding:0 14px;background:var(--steel-2);border:1px solid var(--line-2);border-radius:6px;font:600 16px var(--f-display);letter-spacing:.08em;text-transform:uppercase;display:inline-flex;align-items:center;justify-content:center;gap:8px;transition:transform .08s,background .15s}
+.blk:active{transform:scale(.98)}
+.blk.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+.blk.ghost{background:none}
+.blk.okb{background:var(--ok);border-color:var(--ok);color:#06140d}
+.blk.badb{background:none;border-color:var(--bad);color:var(--bad)}
+.blk[disabled]{opacity:.35;cursor:not-allowed}
+.blk.sm{min-height:38px;font-size:14px}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{min-height:42px;padding:0 14px;background:var(--steel);border:1px solid var(--line-2);border-radius:6px;font:600 15px var(--f-display);letter-spacing:.06em;text-transform:uppercase}
+.chip.on{border-color:var(--accent);color:var(--accent);background:rgba(212,166,76,.08)}
+select,input{width:100%;min-height:46px;background:var(--steel);border:1px solid var(--line-2);border-radius:6px;color:var(--fg);padding:0 12px;font:15px var(--f-body)}
+
+/* Pin */
+.pinwrap{align-items:center;text-align:center;padding-top:34px}
+.mark{font:700 44px/0.9 var(--f-display);letter-spacing:.04em;display:flex;flex-direction:column}
+.mark span{font-size:16px;letter-spacing:.5em;color:var(--accent);margin-bottom:4px}
+.who{display:grid;grid-template-columns:1fr;gap:8px;width:100%}
+.who .blk.on{border-color:var(--accent);color:var(--accent)}
+.dots{display:flex;gap:14px;margin:6px 0}
+.dots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line-2)}
+.dots i.f{background:var(--accent);border-color:var(--accent);animation:pop .2s}
+.keys{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;width:100%}
+.key{height:52px;background:var(--steel);border:1px solid var(--line);border-radius:6px;font:500 20px var(--f-num)}
+.hint{font-size:12px;color:var(--muted)}
+
+/* Sell */
+.tabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:4px 12px 8px}
+.tab{min-height:40px;background:none;border:1px solid var(--line);border-radius:6px;font:600 15px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+.tab.on{background:var(--steel-2);color:var(--fg);border-color:var(--line-2);box-shadow:inset 0 -2px 0 var(--accent)}
+.tiles{flex:1;min-height:0;overflow:auto;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;padding:2px 12px 12px;align-content:start}
+.tile{position:relative;min-height:88px;padding:10px;background:var(--steel-2);border:1px solid var(--line);border-radius:6px;display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;overflow:hidden}
+.tile .tn{font:700 15px/1.05 var(--f-display);text-transform:uppercase;letter-spacing:.03em}
+.tile .tp{font-size:13px;color:var(--accent);margin-top:auto}
+.tile .tl{font-size:11px;color:var(--muted)}
+.tile.low .tl{color:var(--warn)}
+.tile.out{opacity:.4}
+.tile.bump{animation:pop .25s}
+@keyframes pop{50%{transform:scale(.94)}}
+.basket{border-top:1px solid var(--line);background:var(--steel);padding:10px 12px 12px;display:flex;flex-direction:column;gap:6px;max-height:46%;overflow:auto}
+.bl{display:grid;grid-template-columns:1fr auto 64px;align-items:center;gap:8px;font-size:13px}
+.bl.new{animation:lineIn .25s ease-out}
+@keyframes lineIn{from{opacity:0;transform:translateY(6px)}}
+.bl .num:last-child{text-align:right}
+.stepper{display:flex;align-items:center;gap:6px}
+.stepper button{width:30px;height:30px;border-radius:5px;background:var(--steel-2);border:1px solid var(--line-2);font:600 16px var(--f-num)}
+.stepper b{min-width:42px;text-align:center;font-weight:500}
+.btot{display:flex;justify-content:space-between;align-items:baseline;padding-top:4px;border-top:1px dashed var(--line-2)}
+.btot b{font-size:20px}
+
+.nav{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--line);background:var(--panel);padding-bottom:10px}
+.nav button{background:none;border:0;padding:12px 2px 8px;font:600 13px var(--f-display);letter-spacing:.1em;text-transform:uppercase;color:var(--muted);position:relative}
+.nav button.on{color:var(--fg);box-shadow:inset 0 2px 0 var(--accent)}
+.badge{position:absolute;top:6px;right:calc(50% - 22px);min-width:16px;height:16px;border-radius:8px;background:var(--wait);color:#08121e;font:600 10px/16px var(--f-num);padding:0 4px}
+
+/* Sheets */
+.sheet{position:absolute;inset:0;background:rgba(5,7,9,.62);display:flex;align-items:flex-end;z-index:5;animation:fade .2s}
+@keyframes fade{from{opacity:0}}
+.sheet-in{width:100%;background:var(--steel);border-top:1px solid var(--line-2);border-radius:16px 16px 0 0;padding:16px 18px 22px;display:flex;flex-direction:column;gap:12px;animation:up .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(100%)}}
+.sh-h{display:flex;justify-content:space-between;align-items:center}
+.sh-h h3{font:700 24px var(--f-display);text-transform:uppercase;letter-spacing:.04em;margin:0}
+.x{background:none;border:1px solid var(--line-2);border-radius:6px;width:36px;height:36px}
+.seg{display:grid;grid-template-columns:repeat(3,1fr);border:1px solid var(--line-2);border-radius:6px;overflow:hidden}
+.seg button{min-height:46px;background:none;border:0;border-right:1px solid var(--line-2);font:600 16px var(--f-display);letter-spacing:.1em}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--accent);color:var(--accent-ink)}
+.change{display:flex;justify-content:space-between;align-items:baseline;padding:12px;border:1px solid var(--line-2);border-radius:6px;animation:lineIn .25s}
+.change b{font-size:24px;color:var(--ok)}
+
+/* Status pills */
+.pill{display:inline-flex;align-items:center;gap:6px;font:600 12px var(--f-display);letter-spacing:.12em;text-transform:uppercase;padding:3px 8px;border-radius:4px;border:1px solid currentColor}
+.pill.pending{color:var(--wait)} .pill.pending::before{content:"";width:7px;height:7px;border-radius:50%;background:currentColor;animation:pulse 1.2s infinite}
+.pill.approved{color:var(--ok)} .pill.rejected{color:var(--bad)} .pill.open{color:var(--ok)} .pill.locked{color:var(--warn)} .pill.sent{color:var(--accent)}
+@keyframes pulse{50%{opacity:.25}}
+.req{border:1px solid var(--line);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--steel)}
+.req .top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.trail{font:11px/1.6 var(--f-num);color:var(--muted);margin:0;padding-left:14px}
+.qty{display:grid;grid-template-columns:1fr;gap:8px}
+.qty .val{font:500 30px var(--f-num);text-align:center;padding:6px;border:1px solid var(--line);border-radius:6px}
+
+/* Clock out */
+.ctable{width:100%;border-collapse:collapse;font-size:13px}
+.ctable th{font:600 11px var(--f-display);letter-spacing:.12em;text-transform:uppercase;color:var(--muted);text-align:left;padding:6px 4px;border-bottom:1px solid var(--line)}
+.ctable td{padding:5px 4px;border-bottom:1px solid var(--steel-2);vertical-align:middle}
+.ctable td.num,.ctable th.r{text-align:right}
+.ctable .cat td{font:600 11px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);padding-top:12px}
+.cin{min-height:34px;width:64px;padding:0 8px;text-align:right;font-family:var(--f-num)}
+.ctable tr.bad td{color:var(--bad)} .ctable tr.bad .cin{border-color:var(--bad);color:var(--bad)}
+.ctable tr.bad{animation:flash 1s}
+@keyframes flash{30%{background:rgba(229,86,78,.18)}}
+.d{font-size:11px}
+.ok{color:var(--ok)} .bad{color:var(--bad)} .warn{color:var(--warn)}
+.money{display:grid;grid-template-columns:1fr 92px;gap:8px 10px;align-items:center;font-size:13px}
+.money input{min-height:38px;text-align:right;font-family:var(--f-num)}
+.block{border:1px solid var(--line);border-radius:6px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.banner{border:1px solid var(--wait);color:var(--wait);background:rgba(127,169,224,.08);border-radius:6px;padding:10px 12px;font-size:13px;display:flex;flex-direction:column;gap:8px}
+.banner.warnb{border-color:var(--warn);color:var(--warn);background:rgba(232,145,58,.08)}
+.pins{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pins .blk{font-size:13px;flex-direction:column;gap:0;line-height:1.1;padding:6px}
+.pins .blk.on{border-color:var(--ok);color:var(--ok)}
+
+/* Paper report */
+.paper{background:var(--paper);color:var(--paper-ink);border-radius:4px;padding:12px;font-size:10.5px;box-shadow:0 2px 0 #b9bec5}
+.paper.print{animation:printIn .7s ease-out}
+@keyframes printIn{from{clip-path:inset(0 0 100% 0)}to{clip-path:inset(0 0 0 0)}}
+.paper h4{font:700 15px var(--f-display);text-transform:uppercase;letter-spacing:.06em;margin:0}
+.paper .ph{display:flex;justify-content:space-between;gap:8px;border-bottom:2px solid var(--paper-ink);padding-bottom:6px;margin-bottom:6px}
+.scrollx{overflow-x:auto}
+.ptable{border-collapse:collapse;width:100%;min-width:430px;font-variant-numeric:tabular-nums}
+.ptable th,.ptable td{border:1px solid var(--paper-line);padding:2px 4px;text-align:right;white-space:nowrap}
+.ptable th:first-child,.ptable td:first-child{text-align:left}
+.ptable th{background:#dde1e6;font-weight:600}
+.ptable .pc td{background:#e4e7eb;font-weight:600;text-align:left}
+.ptable td.flagc{color:#b3261e;font-weight:600}
+.pblock{margin-top:8px;display:grid;grid-template-columns:1fr auto;gap:1px 10px}
+.pflags{margin-top:8px;border:1.5px solid var(--paper-ink);padding:6px 8px}
+.pflags li{margin:2px 0}
+.pflags .fbad{color:#b3261e;font-weight:600} .pflags .fok{color:#1e7a4f}
+.sent{border:1px solid var(--ok);color:var(--ok);border-radius:6px;padding:10px 12px;font-size:13px}
+.apps{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.chat{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--line-2);border-radius:6px;background:var(--steel-2);text-align:left;width:100%}
+.chat .av{width:34px;height:34px;border-radius:50%;background:var(--line-2);display:grid;place-items:center;font:600 13px var(--f-display)}
+.spin{width:28px;height:28px;border:3px solid var(--line-2);border-top-color:var(--accent);border-radius:50%;animation:rot .8s linear infinite;margin:10px auto}
+@keyframes rot{to{transform:rotate(360deg)}}
+
+/* Boss */
+.btabs{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:0 12px 10px}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.stat{background:var(--steel);border:1px solid var(--line);border-radius:6px;padding:10px}
+.stat .v{font:500 22px var(--f-num)}
+.stat.main{grid-column:1/-1}
+.stat.main .v{font-size:32px;color:var(--accent)}
+.feed{list-style:none;margin:0;padding:0;font-size:12.5px}
+.feed li{display:grid;grid-template-columns:44px 1fr;gap:8px;padding:6px 0;border-bottom:1px solid var(--steel-2)}
+.feed li.new{animation:lineIn .35s}
+.feed .num{color:var(--muted)}
+.notif{position:absolute;left:10px;right:10px;top:40px;z-index:6;background:#1f2a36;border:1px solid var(--wait);border-radius:12px;padding:14px;box-shadow:0 14px 34px rgba(0,0,0,.6);display:flex;flex-direction:column;gap:10px;animation:drop .45s cubic-bezier(.2,1.2,.3,1)}
+@keyframes drop{from{transform:translateY(-140%);opacity:0}}
+.notif .two{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.buzz{animation:shake .42s 3}
+@keyframes shake{20%{transform:translateX(-5px) rotate(-.6deg)}40%{transform:translateX(5px) rotate(.6deg)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+.only{display:inline-flex;gap:6px;align-items:center;font:600 11px var(--f-display);letter-spacing:.14em;text-transform:uppercase;color:var(--accent);border:1px dashed var(--accent);padding:3px 8px;border-radius:4px}
+
+.toast{position:absolute;left:50%;bottom:76px;transform:translateX(-50%);background:var(--fg);color:var(--bg);font:600 14px var(--f-display);letter-spacing:.06em;text-transform:uppercase;padding:9px 14px;border-radius:6px;z-index:7;white-space:nowrap;animation:toast 1.8s forwards}
+@keyframes toast{0%{opacity:0;transform:translate(-50%,8px)}12%,82%{opacity:1;transform:translate(-50%,0)}100%{opacity:0}}
+
+.tapfx{position:relative;overflow:hidden}
+.ripple{position:absolute;left:50%;top:50%;width:14px;height:14px;margin:-7px;border-radius:50%;background:rgba(212,166,76,.55);pointer-events:none;animation:rip .5s ease-out forwards}
+@keyframes rip{to{transform:scale(14);opacity:0}}
+.typing{border-color:var(--accent)!important;box-shadow:0 0 0 3px rgba(212,166,76,.2)}
+
+@media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+</style>
+
+<div class="stage" id="stage" data-view="staff">
+  <aside class="tour" id="tour"></aside>
+  <div class="switch" role="tablist">
+    <button class="blk sm" data-a="view" data-v="staff" id="swStaff">Employee phone</button>
+    <button class="blk sm" data-a="view" data-v="boss" id="swBoss">Boss phone</button>
+  </div>
+  <section class="col" id="staffCol">
+    <div class="plabel">Employee phone</div>
+    <div class="phone" id="staff"><div class="sbar"><span class="num" id="sClock">20:02</span><span class="net"><i></i>Online</span></div><div class="app" id="staffApp"></div></div>
+  </section>
+  <section class="col" id="bossCol">
+    <div class="plabel">Boss phone</div>
+    <div class="phone" id="boss"><div class="sbar"><span class="num" id="bClock">20:02</span><span class="net"><i></i>Online</span></div><div class="app" id="bossApp"></div></div>
+  </section>
+</div>
+
+<script>
+(()=>{
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const narrow = () => matchMedia('(max-width:1099px)').matches;
+const sleep = ms => new Promise(r => setTimeout(r, reduce ? Math.min(ms, 60) : ms));
+
+/* Products from the paper sheet. Opening = closing counts on the sheet. Cost prices are examples (boss-only). */
+const PRODUCTS = [
+ ['outdoor','Outdoor','Main',20,'ea',59,9],['supercheese','Super Cheese','Main',30,'ea',25,14],
+ ['castro','Castro Pop','Main',60,'ea',29,30],['exodus','Exodus C','Main',80,'ea',26,42],
+ ['pinkink','Pink Ink','Main',100,'g',1,55],['eucalypto','Eucalypto','Main',100,'g',1,55],
+ ['cadillac','Cadillac','Main',120,'g',3,65],['icecool','Ice Cool','Main',120,'g',3,65],
+ ['grapeballs','Grape Balls','Main',150,'g',5,80],['martian','Martian F','Main',150,'g',4,80],
+ ['gummies','Gummies','Main',30,'ea',8,15],['kings','Kings','Main',250,'ea',3,140],
+ ['coke','Coke','Beverages',20,'ea',0,11],['sprite','Sprite','Beverages',20,'ea',0,11],
+ ['monster','Monster','Beverages',25,'ea',5,16],['powerade','Powerade','Beverages',25,'ea',0,15],
+ ['bluestar','Blue Star','Rolling',20,'ea',18,10],['bobmarley','Bob Marley','Rolling',20,'ea',4,10],
+ ['limitless','Limitless','Rolling',30,'ea',50,15],['rizla30','Rizla','Rolling',30,'ea',50,15],
+ ['rizla20','Rizla','Rolling',20,'ea',13,10],['bejo','Bejo','Rolling',30,'ea',12,15],
+ ['raw','Raw','Rolling',40,'ea',12,20],['honeyp','Honey P','Rolling',20,'ea',3,10]
+].map(([id,name,cat,price,unit,open,cost])=>({id,name,cat,price,unit,open,cost,step:unit==='g'?.5:1,low:unit==='g'?1:3}));
+const CATS = [['Main','Main'],['Beverages','Drinks'],['Rolling','Rolling']];
+const PEOPLE = {a:'Employee A', b:'Employee B', m:'Manager'};
+
+const P = id => PRODUCTS.find(p => p.id === id);
+const sum = (a,f) => a.reduce((s,x) => s + f(x), 0);
+const r1 = x => Math.round(x*10)/10;
+const fmt = n => (Math.round(n*100)/100).toLocaleString('en-US',{maximumFractionDigits:2});
+const R = n => (n<0?'−':'') + 'R' + fmt(Math.abs(n));
+const fq = v => Number.isInteger(v) ? String(v) : v.toFixed(1);
+const q = (p,v) => p.unit==='g' ? fq(v)+' g' : fq(v);
+const nm = p => PRODUCTS.filter(x=>x.name===p.name).length>1 ? `${p.name} R${p.price}` : p.name;
+const clock = t => { t = ((t%1440)+1440)%1440; return String(Math.floor(t/60)).padStart(2,'0')+':'+String(t%60).padStart(2,'0'); };
+
+let S, step = 0, busy = false, tourClick = false, lastScreen = null, entering = false, lastFeed = 0;
+const shown = {};
+
+function fresh(){ return {
+  t:20*60+2, view:'staff', screen:'pin', user:null, pinUser:null, pin:'', clockedIn:false,
+  cat:'Main', basket:[], bump:null, sheet:null, share:null, pay:{mode:'cash',tendered:null,card:null},
+  sin:{}, out:{}, sales:[], expenses:[], reqs:[], seq:1,
+  si:{pid:'coke',qty:0}, so:{pid:'martian',qty:.5,reason:'Given to boss'}, ex:{amt:20,note:''},
+  counts:{}, cash:'', slip:'', pinOut:false, pinIn:false, locked:false, sent:false,
+  float:200, boss:{tab:'live',banner:null}, feed:[], toast:null, done:new Set()
+}; }
+
+/* Derived numbers: every total is calculated, never typed */
+const sold = id => sum(S.sales, s => sum(s.lines.filter(l=>l.id===id), l=>l.q));
+const pend = id => sum(S.reqs.filter(r=>r.id===id && r.st==='pending'), r=>r.q);
+const inQ = id => S.sin[id]||0, outQ = id => S.out[id]||0;
+const expected = id => r1(P(id).open + inQ(id) - outQ(id) - sold(id) - pend(id));
+const inBasket = id => (S.basket.find(l=>l.id===id)||{q:0}).q;
+const left = id => r1(expected(id) - inBasket(id));
+const counted = id => S.counts[id]!=null ? S.counts[id] : expected(id);
+const basketTotal = () => sum(S.basket, l => l.q*P(l.id).price);
+const catSales = c => sum(S.sales, s => sum(s.lines.filter(l=>P(l.id).cat===c), l=>l.q*l.price));
+function totals(){ const sales=sum(S.sales,s=>s.total), card=sum(S.sales,s=>s.card), exp=sum(S.expenses,e=>e.amt), cash=sales-card;
+  return {sales,card,cash,exp,expCash:S.float+cash-exp}; }
+
+/* Mutations */
+function log(text){ S.feed.unshift({t:S.t,text}); }
+function toast(t){ S.toast = {t, k:Math.random()}; }
+function addItem(id){ const p=P(id); if(left(id) < p.step){ toast(`${p.name}: none left`); return; }
+  const l=S.basket.find(l=>l.id===id); if(l) l.q=r1(l.q+p.step); else S.basket.push({id,q:p.step}); S.bump=id; }
+function decItem(id){ const l=S.basket.find(l=>l.id===id); if(!l) return; l.q=r1(l.q-P(id).step); if(l.q<=0) S.basket=S.basket.filter(x=>x!==l); }
+function recordSale(){ const total=basketTotal(), m=S.pay.mode; if(!total) return;
+  const card = m==='card' ? total : m==='split' ? Math.min(S.pay.card||0,total) : 0;
+  S.sales.push({n:S.seq++, t:S.t, lines:S.basket.map(l=>({...l,price:P(l.id).price})), total, card, mode:m});
+  log(`Sale ${R(total)} · ${m==='split'?`card ${R(card)} + cash ${R(total-card)}`:m}`);
+  S.basket=[]; S.sheet=null; S.pay={mode:'cash',tendered:null,card:null}; toast('Sale recorded'); }
+function addStockIn(id,qty){ S.sin[id]=r1(inQ(id)+qty); log(`Stock in: ${q(P(id),qty)} ${nm(P(id))}`); }
+function requestOut(id,qty,reason){ const r={rid:S.seq++,id,q:qty,reason,st:'pending',t:S.t,by:S.user,trail:[`${clock(S.t)} Boss buzzed`]};
+  S.reqs.push(r); S.boss.banner=r.rid; log(`Stock out request: ${q(P(id),qty)} ${P(id).name} · ${reason}`); return r; }
+function escalate(rid){ const r=S.reqs.find(r=>r.rid===rid); if(!r||r.st!=='pending'||r.esc) return; S.t+=5; r.esc=true; r.trail.push(`${clock(S.t)} No answer in 5 min · Manager buzzed`); log('Manager buzzed (5 min, no answer)'); }
+function decide(rid,ok,by){ const r=S.reqs.find(r=>r.rid===rid); if(!r||r.st!=='pending') return;
+  r.st=ok?'approved':'rejected'; r.who=by; r.trail.push(`${clock(S.t)} ${ok?'Approved':'Rejected'} by ${by}`);
+  if(ok) S.out[r.id]=r1(outQ(r.id)+r.q); if(S.boss.banner===rid) S.boss.banner=null;
+  log(`${by} ${ok?'approved':'rejected'} stock out: ${q(P(r.id),r.q)} ${P(r.id).name}`); }
+function addExpense(amt,note){ S.expenses.push({amt,note:note||'No note',t:S.t}); log(`Expense ${R(amt)} · ${note||'No note'}`); toast('Expense noted'); }
+function lockShift(){ S.locked=true; S.screen='report'; log('Shift locked · counted with Employee B'); }
+function sendReport(){ S.sent=true; log('Report sent to Shop Reports group'); }
+
+function flags(){
+  const f=[];
+  PRODUCTS.forEach(p=>{ const e=expected(p.id), c=counted(p.id), d=r1(c-e);
+    if(d) f.push(['bad',`${nm(p)}: counted ${q(p,c)}, expected ${q(p,e)} (${d>0?'+':''}${q(p,d)} · ${R(d*p.price)})`]); });
+  const T=totals();
+  if(S.slip!==''){ const d=S.slip-T.card; f.push(d?['bad',`Card slip ${R(S.slip)} vs till card ${R(T.card)} (${R(d)})`]:['ok',`Card slip matches till card sales (${R(T.card)})`]); }
+  if(S.cash!==''){ const d=S.cash-T.expCash; f.push(d?['bad',`Cash counted ${R(S.cash)} vs expected ${R(T.expCash)} (${R(d)})`]:['ok',`Cash counted matches expected (${R(T.expCash)})`]); }
+  S.reqs.forEach(r=>f.push([r.st==='approved'?'info':r.st==='rejected'?'bad':'warn',`Stock out ${q(P(r.id),r.q)} ${P(r.id).name} · ${r.reason} · ${r.st}${r.who?' by '+r.who:''}`]));
+  const low=PRODUCTS.filter(p=>counted(p.id)<=p.low).map(p=>`${nm(p)} ${q(p,counted(p.id))}`);
+  if(low.length) f.push(['warn',`Low or out of stock: ${low.join(', ')}`]);
+  const cs=sum(CATS,([c])=>catSales(c));
+  f.push(cs===T.sales?['ok',`Category totals add up to total sales (${R(T.sales)})`]:['bad',`Category totals ${R(cs)} ≠ total ${R(T.sales)}`]);
+  return f;
+}
+
+/* ---------- Employee screens ---------- */
+const hdr = (title,sub) => `<div class="hdr"><div class="eyebrow">Night shift · 28 Nov</div><h2>${title}</h2><div class="muted small">${sub}</div></div>`;
+const opts = sel => CATS.map(([c,l])=>`<optgroup label="${l}">${PRODUCTS.filter(p=>p.cat===c).map(p=>`<option value="${p.id}" ${p.id===sel?'selected':''}>${nm(p)} · R${p.price}${p.unit==='g'?'/g':''}</option>`).join('')}</optgroup>`).join('');
+
+function scrPin(){ const u=S.pinUser;
+  return `<div class="pad stack pinwrap"><div class="mark"><span>SHIFT</span>POS</div>
+  <p class="muted" style="margin:0">Who is signing in?</p>
+  <div class="who">${Object.entries(PEOPLE).map(([k,v])=>`<button class="blk ${u===k?'on':''}" data-a="pickUser" data-id="${k}">${v}</button>`).join('')}</div>
+  ${u?`<div class="dots">${[0,1,2,3].map(i=>`<i class="${i<S.pin.length?'f':''}"></i>`).join('')}</div>
+  <div class="keys">${[1,2,3,4,5,6,7,8,9,'',0,'⌫'].map(k=>k===''?'<span></span>':`<button class="key" data-a="${k==='⌫'?'pinDel':'pin'}" data-d="${k}" aria-label="${k==='⌫'?'Delete':k}">${k}</button>`).join('')}</div>`
+  :`<p class="hint">This phone was linked once with an invite link on WhatsApp. From now on, PIN only.</p>`}</div>`; }
+
+function scrClockIn(){
+  return `${hdr('Clock in',`${PEOPLE[S.user]} · ${clock(S.t)}`)}<div class="pad stack">
+  <div class="note">Opening stock is carried over from the last locked shift (your sheet's closing counts). Nothing is typed again.</div>
+  ${CATS.map(([c,l])=>`<div class="grp"><div class="gl">${l}</div>${PRODUCTS.filter(p=>p.cat===c).map(p=>`<div class="row"><span>${nm(p)}</span><b class="num">${q(p,p.open)}</b></div>`).join('')}</div>`).join('')}
+  <div class="row big"><span>Cash float in drawer</span><b class="num">R${S.float}</b></div>
+  <button class="blk primary" data-a="startShift">Confirm &amp; start shift</button>
+  <button class="blk ghost" data-a="correct">Correct a count</button></div>`; }
+
+function scrSell(){ const items=PRODUCTS.filter(p=>p.cat===S.cat);
+  return `<div class="tabs">${CATS.map(([c,l])=>`<button class="tab ${S.cat===c?'on':''}" data-a="cat" data-c="${c}">${l}</button>`).join('')}</div>
+  <div class="tiles" data-keep="tiles">${items.map(p=>{ const lf=left(p.id), st=lf<=0?'out':lf<=p.low?'low':'';
+    return `<button class="tile ${st} ${S.bump===p.id?'bump':''}" data-a="add" data-id="${p.id}"><span class="tn">${p.name}</span><span class="tp num">R${p.price}${p.unit==='g'?'/g':''}</span><span class="tl">${lf<=0?'Out of stock':q(p,lf)+' left'}</span></button>`; }).join('')}</div>
+  <div class="basket" data-keep="basket">${S.basket.length?S.basket.map(l=>{ const p=P(l.id);
+    return `<div class="bl ${S.bump===l.id?'new':''}"><span>${nm(p)}</span><span class="stepper"><button data-a="dec" data-id="${p.id}" aria-label="Less ${p.name}">−</button><b class="num">${q(p,l.q)}</b><button data-a="add" data-id="${p.id}" aria-label="More ${p.name}">+</button></span><span class="num">${R(l.q*p.price)}</span></div>`; }).join('')
+    :`<div class="muted small">Tap a product to start a sale. Gram items go in 0.5 g steps.</div>`}
+  <div class="btot"><span class="lbl">Total</span><b class="num">${R(basketTotal())}</b></div>
+  <button class="blk primary" data-a="openPay" ${S.basket.length?'':'disabled'}>Pay</button></div>`; }
+
+function sheetPay(){ const tot=basketTotal(), m=S.pay.mode; let body='';
+  if(m==='cash'){ const o=[tot,50,100,200].filter((v,i)=>i===0||v>tot);
+    body=`<div class="lbl">Customer hands over</div><div class="chips">${o.map((v,i)=>`<button class="chip ${S.pay.tendered===v?'on':''}" data-a="tender" data-v="${v}">${i===0?'Exact':'R'+v}</button>`).join('')}</div>
+    ${S.pay.tendered!=null?`<div class="change"><span class="lbl">Give change</span><b class="num">${R(S.pay.tendered-tot)}</b></div>`:''}`; }
+  if(m==='card') body=`<div class="note">Customer taps on the card machine for <b class="num">${R(tot)}</b>. Nothing to type.</div>`;
+  if(m==='split'){ const o=[50,100,200].filter(v=>v<tot);
+    body=`<div class="lbl">Card part</div><div class="chips">${o.map(v=>`<button class="chip ${S.pay.card===v?'on':''}" data-a="splitCard" data-v="${v}">R${v}</button>`).join('')}</div>
+    ${S.pay.card!=null?`<div class="change"><span class="lbl">Card ${R(S.pay.card)} · cash</span><b class="num">${R(tot-S.pay.card)}</b></div>`:''}`; }
+  const ready = m==='card' || (m==='cash'&&S.pay.tendered!=null) || (m==='split'&&S.pay.card!=null);
+  return `<div class="sheet"><div class="sheet-in"><div class="sh-h"><h3>Pay <span class="num">${R(tot)}</span></h3><button class="x" data-a="closeSheet" aria-label="Close">✕</button></div>
+  <div class="seg">${['cash','card','split'].map(x=>`<button class="${m===x?'on':''}" data-a="payMode" data-m="${x}">${x.toUpperCase()}</button>`).join('')}</div>
+  ${body}<button class="blk primary" data-a="confirmPay" ${ready?'':'disabled'}>Record sale</button></div></div>`; }
+
+function scrIn(){ const p=P(S.si.pid);
+  return `${hdr('Stock in','A delivery arrived')}<div class="pad stack">
+  <label class="lbl" for="siPid">Product</label><select id="siPid" data-in="siPid">${opts(S.si.pid)}</select>
+  <div class="lbl">Quantity</div><div class="qty"><div class="val num">${q(p,S.si.qty)}</div>
+  <div class="chips">${[1,6,12].map(v=>`<button class="chip" data-a="siAdd" data-v="${v}">+${v}</button>`).join('')}<button class="chip" data-a="siClear">Clear</button></div></div>
+  <button class="blk primary" data-a="saveIn" ${S.si.qty>0?'':'disabled'}>Add to stock</button>
+  ${Object.keys(S.sin).length?`<div class="grp"><div class="gl">This shift</div>${Object.entries(S.sin).map(([id,v])=>`<div class="row"><span>${nm(P(id))}</span><b class="num">+${q(P(id),v)}</b></div>`).join('')}</div>`:''}</div>`; }
+
+function reqCard(r,mgr){ const p=P(r.id);
+  return `<div class="req"><div class="top"><b>${q(p,r.q)} ${nm(p)}</b><span class="pill ${r.st}">${r.st}</span></div>
+  <div class="muted small">${r.reason} · ${R(r.q*p.price)} at till price</div>
+  <ul class="trail">${r.trail.map(x=>`<li>${x}</li>`).join('')}</ul>
+  ${r.st==='pending'&&!r.esc&&!mgr?`<button class="chip" data-a="skip5" data-rid="${r.rid}">Demo: jump 5 minutes</button>`:''}
+  ${r.st==='pending'&&mgr?`<button class="blk sm" data-a="mgrDecide" data-rid="${r.rid}">Manager PIN: approve here</button>`:''}</div>`; }
+
+function scrOut(){ const p=P(S.so.pid);
+  return `${hdr('Stock out','Stock leaving without a sale needs approval')}<div class="pad stack">
+  <label class="lbl" for="soPid">Product</label><select id="soPid" data-in="soPid">${opts(S.so.pid)}</select>
+  <div class="lbl">Quantity</div><div class="stepper" style="justify-content:center"><button data-a="soDec" aria-label="Less">−</button><b class="num" style="font-size:22px;min-width:90px">${q(p,S.so.qty)}</b><button data-a="soInc" aria-label="More">+</button></div>
+  <div class="lbl">Reason</div><div class="chips">${['Given to boss','Sample','Damaged','Other'].map(x=>`<button class="chip ${S.so.reason===x?'on':''}" data-a="reason" data-r="${x}">${x}</button>`).join('')}</div>
+  <button class="blk primary" data-a="sendOut">Send for approval</button>
+  ${S.reqs.slice().reverse().map(r=>reqCard(r)).join('')}</div>`; }
+
+function scrExp(){
+  return `${hdr('Expense','Paid from the till. Just noted, no approval.')}<div class="pad stack">
+  <div class="lbl">Amount</div><div class="chips">${[20,50,100].map(v=>`<button class="chip ${S.ex.amt===v?'on':''}" data-a="exAmt" data-v="${v}">R${v}</button>`).join('')}</div>
+  <label class="lbl" for="exNote">Note</label><input id="exNote" data-in="exNote" placeholder="What was it for?" value="${S.ex.note.replace(/"/g,'&quot;')}">
+  <button class="blk primary" data-a="saveEx" ${S.ex.amt>0?'':'disabled'}>Save expense</button>
+  ${S.expenses.length?`<div class="grp"><div class="gl">This shift</div>${S.expenses.map(e=>`<div class="row"><span>${clock(e.t)} · ${e.note}</span><b class="num">${R(e.amt)}</b></div>`).join('')}</div>`:''}</div>`; }
+
+function scrClose(){ const T=totals(), pending=S.reqs.filter(r=>r.st==='pending');
+  const ready=!pending.length && S.slip!=='' && S.cash!=='' && S.pinOut && S.pinIn;
+  const dv = (a,b) => { const d=a-b; return d?`<span class="bad num">${R(d)}</span>`:`<span class="ok">✓</span>`; };
+  return `${hdr('Clock out','Count together with the incoming person')}<div class="pad stack">
+  ${pending.length?`<div class="banner"><b>${pending.length} stock out still waiting for approval.</b> You can't lock until it's answered.${pending.map(r=>reqCard(r,true)).join('')}</div>`:''}
+  <div class="scrollx" data-keep="ct"><table class="ctable"><thead><tr><th>Item</th><th class="r">Expect</th><th class="r">Counted</th><th class="r">Diff</th></tr></thead><tbody>
+  ${CATS.map(([c,l])=>`<tr class="cat"><td colspan="4">${l}</td></tr>`+PRODUCTS.filter(p=>p.cat===c).map(p=>{ const e=expected(p.id), cv=counted(p.id), d=r1(cv-e);
+    return `<tr class="${d?'bad':''}"><td>${nm(p)}</td><td class="num">${q(p,e)}</td><td class="num"><input class="cin" inputmode="decimal" data-in="count" data-id="${p.id}" value="${fq(cv)}" aria-label="Counted ${nm(p)}"></td><td class="num d">${d?`${d>0?'+':''}${fq(d)} · ${R(d*p.price)}`:'✓'}</td></tr>`; }).join('')).join('')}
+  </tbody></table></div>
+  <div class="block"><div class="lbl">Card</div><div class="money"><span>Card sales on the till</span><b class="num" style="text-align:right">${R(T.card)}</b>
+  <label for="slip">Card machine end-of-day slip</label><input id="slip" inputmode="decimal" data-in="slip" value="${S.slip}" placeholder="R">
+  <span class="muted">Difference</span><span style="text-align:right">${S.slip===''?'—':dv(S.slip,T.card)}</span></div></div>
+  <div class="block"><div class="lbl">Cash</div><div class="money">
+  <span>Float</span><b class="num" style="text-align:right">${R(S.float)}</b><span>+ Cash sales</span><b class="num" style="text-align:right">${R(T.cash)}</b>
+  <span>− Expenses</span><b class="num" style="text-align:right">${R(T.exp)}</b><span><b>Expected in drawer</b></span><b class="num" style="text-align:right">${R(T.expCash)}</b>
+  <label for="cash">Cash counted</label><input id="cash" inputmode="decimal" data-in="cash" value="${S.cash}" placeholder="R">
+  <span class="muted">Difference</span><span style="text-align:right">${S.cash===''?'—':dv(S.cash,T.expCash)}</span></div></div>
+  <div class="lbl">Handover PINs</div><div class="pins">
+  <button class="blk ${S.pinOut?'on':''}" data-a="pinOut"><span>Employee A</span><span class="small">${S.pinOut?'PIN ✓':'Outgoing · PIN'}</span></button>
+  <button class="blk ${S.pinIn?'on':''}" data-a="pinIn"><span>Employee B</span><span class="small">${S.pinIn?'PIN ✓':'Incoming · PIN'}</span></button></div>
+  <button class="blk primary" data-a="lock" ${ready?'':'disabled'}>Lock shift</button></div>`; }
+
+function paper(){ const T=totals(), F=flags();
+  const rows = CATS.map(([c,l])=>`<tr class="pc"><td colspan="10">${l}</td></tr>`+PRODUCTS.filter(p=>p.cat===c).map(p=>{ const cv=counted(p.id), d=r1(cv-expected(p.id)), s=sold(p.id);
+    return `<tr><td>${nm(p)}</td><td>${p.price}</td><td>${fq(p.open)}</td><td>${inQ(p.id)?fq(inQ(p.id)):''}</td><td>${outQ(p.id)?fq(outQ(p.id)):''}</td><td>${fq(cv)}</td><td>${s?fq(s):''}</td><td>${s?fmt(s*p.price):''}</td><td>${fmt(cv*p.price)}</td><td class="${d?'flagc':''}">${d?fq(d):''}</td></tr>`; }).join('')).join('');
+  return `<div class="paper ${entering?'print':''}"><div class="ph"><div><h4>Night shift · 28 Nov</h4><div>Employee A → Employee B · 20:02–08:01</div></div><div style="text-align:right">LOCKED<br>${S.sent?'SENT':'NOT SENT'}</div></div>
+  <div class="scrollx"><table class="ptable"><thead><tr><th>Product</th><th>Price</th><th>Open</th><th>In</th><th>Out</th><th>Close</th><th>Sold</th><th>Sales R</th><th>Stock R</th><th>Diff</th></tr></thead><tbody>${rows}</tbody></table></div>
+  <div class="pblock"><span>Total sales</span><b>${R(T.sales)}</b><span>Card sales (slip ${S.slip===''?'—':R(S.slip)})</span><b>${R(T.card)}</b><span>Cash sales</span><b>${R(T.cash)}</b>
+  <span>Expenses</span><b>${R(T.exp)}</b><span>Float</span><b>${R(S.float)}</b><span>Expected cash / counted</span><b>${R(T.expCash)} / ${S.cash===''?'—':R(S.cash)}</b>
+  <span>Stock value at close</span><b>${R(sum(PRODUCTS,p=>counted(p.id)*p.price))}</b></div>
+  <div class="pflags"><b>FLAGS</b><ul style="margin:4px 0 0;padding-left:14px">${F.map(([l,t])=>`<li class="${l==='bad'?'fbad':l==='ok'?'fok':''}">${t}</li>`).join('')}</ul></div>
+  <div style="margin-top:6px">Stock in: ${Object.entries(S.sin).map(([id,v])=>`${nm(P(id))} +${q(P(id),v)}`).join(', ')||'none'} · Expenses: ${S.expenses.map(e=>`${R(e.amt)} ${e.note}`).join(', ')||'none'}</div></div>`; }
+
+function scrReport(){
+  return `${hdr('Shift report','Locked. Numbers can no longer change.')}<div class="pad stack">
+  ${S.sent?`<div class="sent">Sent to <b>Shop Reports</b> (Boss + Manager) · Night-28Nov.pdf + Night-28Nov.xlsx</div>`
+    :`<div class="banner warnb">Report not sent yet. You'll be reminded after 15 min, and the boss and manager are buzzed after 30 min.</div>`}
+  ${paper()}
+  ${S.sent?'':`<button class="blk primary" data-a="share">Share to WhatsApp</button>`}</div>`; }
+
+function sheetShare(){ let body='';
+  if(S.share==='apps') body=`<div class="muted small">2 files: Night-28Nov.pdf · Night-28Nov.xlsx</div><div class="apps"><button class="blk" data-a="shareApp">WhatsApp</button><button class="blk ghost" data-a="saveLocal">Save to phone</button></div>`;
+  if(S.share==='chats') body=`<div class="lbl">Send to</div>${[['SR','Shop Reports','Boss, Manager, staff','shareTo'],['B','Boss','',''],['M','Manager','','']].map(([a,n,s,act])=>`<button class="chat" data-a="${act||'shareTo'}"><span class="av">${a}</span><span><b>${n}</b>${s?`<br><span class="muted small">${s}</span>`:''}</span></button>`).join('')}`;
+  if(S.share==='sending') body=`<div class="spin" aria-label="Sending"></div><div class="muted small" style="text-align:center">Sending to Shop Reports…</div>`;
+  return `<div class="sheet"><div class="sheet-in"><div class="sh-h"><h3>Share</h3><button class="x" data-a="closeSheet" aria-label="Close">✕</button></div>${body}</div></div>`; }
+
+function renderStaff(){
+  const root=document.getElementById('staffApp'), keep={};
+  root.querySelectorAll('[data-keep]').forEach(el=>keep[el.dataset.keep]=el.scrollTop);
+  const scr = {pin:scrPin, clockin:scrClockIn, sell:scrSell, in:scrIn, out:scrOut, exp:scrExp, close:scrClose, report:scrReport}[S.screen];
+  const enter = S.screen!==lastScreen ? 'enter' : ''; lastScreen=S.screen; entering=!!enter;
+  const showNav = S.clockedIn;
+  const np = S.reqs.filter(r=>r.st==='pending').length;
+  const nav = showNav?`<nav class="nav">${[['sell','Sell'],['in','In'],['out','Out'],['exp','Expense'],['close',S.locked?'Report':'Close']].map(([k,l])=>`<button class="${S.screen===k||(k==='close'&&S.screen==='report')?'on':''}" data-a="nav" data-s="${k}">${l}${k==='out'&&np?`<span class="badge">${np}</span>`:''}</button>`).join('')}</nav>`:'';
+  root.innerHTML = `<div class="screen ${S.screen==='sell'?'flex':''} ${enter}" data-keep="main">${scr()}</div>${nav}${S.sheet==='pay'?sheetPay():''}${S.sheet==='share'?sheetShare():''}${S.toast?`<div class="toast" data-k="${S.toast.k}">${S.toast.t}</div>`:''}`;
+  root.querySelectorAll('[data-keep]').forEach(el=>{ if(keep[el.dataset.keep]!=null && !enter) el.scrollTop=keep[el.dataset.keep]; });
+  S.bump=null; S.toast=null;
+  document.getElementById('sClock').textContent=clock(S.t);
+}
+
+/* ---------- Boss phone ---------- */
+function renderBoss(){
+  const root=document.getElementById('bossApp'), T=totals(), pending=S.reqs.filter(r=>r.st==='pending');
+  const nNew=Math.max(0,S.feed.length-lastFeed); lastFeed=S.feed.length;
+  const status = S.sent?'sent':S.locked?'locked':S.clockedIn?'open':'';
+  let body='';
+  if(S.boss.tab==='live') body=`<div class="pad stack">
+    <div class="req"><div class="top"><b>Night · 28 Nov</b>${status?`<span class="pill ${status}">${status}</span>`:'<span class="muted small">Not started</span>'}</div>
+    <div class="muted small">${S.user?PEOPLE[S.user]+' on shift':'Waiting for clock in'}</div></div>
+    <div class="stats"><div class="stat main"><div class="lbl">Sales so far</div><div class="v num" data-count="${T.sales}" data-key="sales"></div></div>
+    <div class="stat"><div class="lbl">Card</div><div class="v num" data-count="${T.card}" data-key="card"></div></div>
+    <div class="stat"><div class="lbl">Cash</div><div class="v num" data-count="${T.cash}" data-key="cash"></div></div>
+    <div class="stat"><div class="lbl">Expenses</div><div class="v num" data-count="${T.exp}" data-key="exp"></div></div>
+    <div class="stat"><div class="lbl">Waiting on you</div><div class="v num ${pending.length?'':'muted'}" style="${pending.length?'color:var(--wait)':''}">${pending.length}</div></div></div>
+    ${S.sent?`<div class="sent">Report received · Night-28Nov.pdf + .xlsx</div>`:''}
+    <div class="lbl">Activity</div><ul class="feed">${S.feed.slice(0,9).map((f,i)=>`<li class="${i<nNew?'new':''}"><span class="num">${clock(f.t)}</span><span>${f.text}</span></li>`).join('')||'<li><span></span><span class="muted">Nothing yet</span></li>'}</ul></div>`;
+  if(S.boss.tab==='appr') body=`<div class="pad stack">${S.reqs.length?S.reqs.slice().reverse().map(r=>{ const p=P(r.id);
+    return `<div class="req"><div class="top"><b>${q(p,r.q)} ${nm(p)}</b><span class="pill ${r.st}">${r.st}</span></div><div class="muted small">${r.reason} · ${PEOPLE[r.by]} · ${clock(r.t)}</div>
+    ${r.st==='pending'?`<div class="notif-two" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"><button class="blk okb sm" data-a="decide" data-rid="${r.rid}" data-ok="1">Approve</button><button class="blk badb sm" data-a="decide" data-rid="${r.rid}" data-ok="0">Reject</button></div>`:''}</div>`; }).join(''):'<p class="muted">No stock out requests this shift.</p>'}</div>`;
+  if(S.boss.tab==='profit'){ const items=PRODUCTS.filter(p=>sold(p.id)>0); const rev=sum(items,p=>sold(p.id)*p.price), cost=sum(items,p=>sold(p.id)*p.cost);
+    body=`<div class="pad stack"><span class="only">Only the boss sees this</span>
+    <table class="ctable"><thead><tr><th>Item</th><th class="r">Sold</th><th class="r">Sales</th><th class="r">Cost</th><th class="r">Profit</th></tr></thead><tbody>
+    ${items.map(p=>`<tr><td>${nm(p)}</td><td class="num">${q(p,sold(p.id))}</td><td class="num">${R(sold(p.id)*p.price)}</td><td class="num">${R(sold(p.id)*p.cost)}</td><td class="num ok">${R(sold(p.id)*(p.price-p.cost))}</td></tr>`).join('')||'<tr><td colspan="5" class="muted">No sales yet</td></tr>'}
+    <tr><td><b>Total</b></td><td></td><td class="num"><b>${R(rev)}</b></td><td class="num">${R(cost)}</td><td class="num ok"><b>${R(rev-cost)}</b></td></tr></tbody></table>
+    <div class="muted small">Cost prices here are examples. The boss enters the real ones; employees and managers never see them.</div></div>`; }
+  const b = S.boss.banner && S.reqs.find(r=>r.rid===S.boss.banner && r.st==='pending');
+  root.innerHTML = `<div class="hdr" style="padding-top:0"><div class="eyebrow">Boss</div><h2 style="font-size:22px">Shop overview</h2></div>
+  <div class="btabs" style="padding-top:10px">${[['live','Live'],['appr','Approvals'],['profit','Profit']].map(([k,l])=>`<button class="tab ${S.boss.tab===k?'on':''}" data-a="bossTab" data-t="${k}">${l}${k==='appr'&&pending.length?` · ${pending.length}`:''}</button>`).join('')}</div>
+  <div class="screen">${body}</div>
+  ${b?`<div class="notif" role="alert"><div class="top" style="display:flex;justify-content:space-between"><span class="lbl" style="color:var(--wait)">Stock out request</span><span class="num muted small">${clock(b.t)}</span></div>
+    <div><b style="font-size:17px">${q(P(b.id),b.q)} ${nm(P(b.id))}</b> <span class="muted">(${R(b.q*P(b.id).price)})</span><br><span class="muted small">${PEOPLE[b.by]} · ${b.reason}</span></div>
+    <div class="two"><button class="blk okb sm" data-a="decide" data-rid="${b.rid}" data-ok="1">Approve</button><button class="blk badb sm" data-a="decide" data-rid="${b.rid}" data-ok="0">Reject</button></div></div>`:''}`;
+  document.getElementById('bClock').textContent=clock(S.t);
+  root.querySelectorAll('[data-count]').forEach(el=>{ const k=el.dataset.key, to=+el.dataset.count, from=shown[k]??to; shown[k]=to;
+    if(from===to||reduce){ el.textContent=R(to); return; } const t0=performance.now();
+    const tick=now=>{ const p=Math.min(1,(now-t0)/700), v=from+(to-from)*(1-Math.pow(1-p,3)); el.textContent=R(Math.round(v)); if(p<1) requestAnimationFrame(tick); }; requestAnimationFrame(tick); });
+}
+function buzz(){ const ph=document.getElementById('boss'); ph.classList.remove('buzz'); void ph.offsetWidth; ph.classList.add('buzz'); }
+
+/* ---------- Walkthrough ---------- */
+const STEPS = [
+ {t:'Your products on a till', at:'pin', d:'This runs one night shift with the products from your sheet. Opening stock is your sheet\'s closing counts. Press Next to play each step, or tap the phones yourself at any time.', quick(){}, async play(){}},
+ {t:'Sign in with a PIN', at:'clockin', d:'Each person picks their name and types a 4-digit PIN. Their phone was linked once with an invite link sent on WhatsApp, which is free.',
+  quick(){ S.user='a'; S.screen='clockin'; log('Employee A signed in'); },
+  async play(){ S.screen='pin'; render(); await tap('[data-a="pickUser"][data-id="a"]'); for(const k of ['4','8','1','5']) await tap(`[data-a="pin"][data-d="${k}"]`,{fast:true}); }},
+ {t:'Clock in: stock carries over', at:'sell', d:'Opening stock comes from the last locked shift. Nobody re-types it. The R200 float is confirmed, then the shift opens and the boss sees it live.',
+  quick(){ S.clockedIn=true; S.screen='sell'; log('Night shift opened · float R200'); },
+  async play(){ await sleep(400); const m=document.querySelector('#staffApp [data-keep="main"]'); if(m&&!reduce){ m.scrollTo({top:m.scrollHeight,behavior:'smooth'}); await sleep(1100);} await tap('[data-a="startShift"]'); }},
+ {t:'Cash sale with change', at:'sell', d:'Outdoor ×2 and Pink Ink 0.5 g (R50). Total R90. The customer hands over R100 and the app shows R10 change.',
+  quick(){ S.t=20*60+41; ['outdoor','outdoor','pinkink'].forEach(addItem); S.pay={mode:'cash',tendered:100,card:null}; recordSale(); },
+  async play(){ S.t=20*60+41; S.screen='sell'; S.cat='Main'; render(); for(const id of ['outdoor','outdoor','pinkink']) await tap(`[data-a="add"][data-id="${id}"]`);
+    await tap('[data-a="openPay"]'); await tap('[data-a="tender"][data-v="100"]'); await sleep(900); await tap('[data-a="confirmPay"]'); }},
+ {t:'Split payment', at:'sell', d:'Kings and Super Cheese come to R280. R200 goes on the card machine and R80 is cash. Card is one tap with no amount typed, so card sales add themselves up.',
+  quick(){ S.t=21*60+5; ['kings','supercheese'].forEach(addItem); S.pay={mode:'split',tendered:null,card:200}; recordSale(); },
+  async play(){ S.t=21*60+5; S.screen='sell'; S.cat='Main'; render(); await tap('[data-a="add"][data-id="kings"]'); await tap('[data-a="add"][data-id="supercheese"]');
+    await tap('[data-a="openPay"]'); await tap('[data-a="payMode"][data-m="split"]'); await tap('[data-a="splitCard"][data-v="200"]'); await sleep(900); await tap('[data-a="confirmPay"]'); }},
+ {t:'Stock in', at:'sell', d:'24 Coke arrive. Log them and Drinks are back on the till with the new count.',
+  quick(){ S.t=21*60+30; addStockIn('coke',24); },
+  async play(){ S.t=21*60+30; await tap('[data-a="nav"][data-s="in"]'); await choose('#siPid','coke'); await tap('[data-a="siAdd"][data-v="12"]'); await tap('[data-a="siAdd"][data-v="12"]'); await tap('[data-a="saveIn"]');
+    await sleep(300); await tap('[data-a="nav"][data-s="sell"]'); await tap('[data-a="cat"][data-c="Beverages"]'); }},
+ {t:'Stock out needs approval', at:'out', d:'0.5 g Martian F is given to the boss. It is sent for approval and stays pending. The boss\'s phone buzzes with Approve and Reject.',
+  quick(){ S.t=22*60+14; requestOut('martian',.5,'Given to boss'); S.screen='out'; },
+  async play(){ S.t=22*60+14; await tap('[data-a="nav"][data-s="out"]'); await choose('#soPid','martian'); await tap('[data-a="reason"][data-r="Given to boss"]'); await tap('[data-a="sendOut"]');
+    if(narrow()){ await sleep(700); S.view='boss'; render(); buzz(); } await sleep(1400); }},
+ {t:'5 minutes, no answer: manager buzzed', at:'out', d:'If nobody answers in 5 minutes, the manager is buzzed too. Then the boss taps Approve on his phone, and the employee\'s screen updates live.',
+  quick(){ const r=S.reqs.find(r=>r.st==='pending'); if(r){ escalate(r.rid); S.t+=2; decide(r.rid,true,'Boss'); } S.screen='out'; },
+  async play(){ if(narrow()){ S.view='staff'; render(); await sleep(300); } const r=S.reqs.find(r=>r.st==='pending'); if(!r) return;
+    await tap(`[data-a="skip5"][data-rid="${r.rid}"]`); await sleep(900);
+    if(narrow()){ S.view='boss'; render(); await sleep(400); } S.t+=2; render(); buzz(); await sleep(700);
+    await tap(`[data-a="decide"][data-rid="${r.rid}"][data-ok="1"]`,{root:'#boss'}); await sleep(900);
+    if(narrow()){ S.view='staff'; render(); } await sleep(600); }},
+ {t:'Expense from the till', at:'exp', d:'R20 for cleaning supplies (an example). It\'s just noted, with no approval. It comes off the cash expected in the drawer.',
+  quick(){ S.t=23*60+10; addExpense(20,'Cleaning supplies'); S.screen='exp'; },
+  async play(){ S.t=23*60+10; await tap('[data-a="nav"][data-s="exp"]'); await tap('[data-a="exAmt"][data-v="20"]'); await typeInto('#exNote','Cleaning supplies'); await tap('[data-a="saveEx"]'); }},
+ {t:'Clock out: count together', at:'close', d:'At 08:00 the outgoing and incoming person count together. Super Cheese is one short, so it\'s flagged with its rand value. The card slip and the cash both match. Both people enter their PIN.',
+  quick(){ S.t=1440+7*60+58; S.screen='close'; S.counts.supercheese=expected('supercheese')-1; S.slip=200; S.cash=totals().expCash; S.pinOut=S.pinIn=true; },
+  async play(){ S.t=1440+7*60+58; await tap('[data-a="nav"][data-s="close"]'); await typeInto('[data-in="count"][data-id="supercheese"]', String(expected('supercheese')-1));
+    await typeInto('#slip','200'); await typeInto('#cash', String(totals().expCash)); await tap('[data-a="pinOut"]'); await tap('[data-a="pinIn"]'); }},
+ {t:'Lock and send to WhatsApp', at:'report', d:'Locking freezes the numbers. The report looks like your paper sheet, plus a Flags box that checks every total adds up. That check would have caught the R295 gap. Share sends the PDF and spreadsheet to the Boss + Manager group.',
+  quick(){ S.t=1440+8*60+1; lockShift(); sendReport(); S.sheet=null; S.share=null; },
+  async play(){ S.t=1440+8*60+1; await tap('[data-a="lock"]'); await sleep(1300); const m=document.querySelector('#staffApp [data-keep="main"]'); if(m&&!reduce){ m.scrollTo({top:m.scrollHeight,behavior:'smooth'}); await sleep(900);}
+    await tap('[data-a="share"]'); await tap('[data-a="shareApp"]'); await tap('.chat'); await sleep(1500); }},
+ {t:'Boss-only profit', at:'report', d:'Only the boss sees cost prices and profit. Managers and employees never do. These cost prices are made-up examples.',
+  quick(){ S.boss.tab='profit'; },
+  async play(){ if(narrow()){ S.view='boss'; render(); await sleep(300); } await tap('[data-a="bossTab"][data-t="profit"]',{root:'#boss'}); }},
+ {t:'That\'s one full shift', at:'report', d:'Pick any step on the left to jump there, or press Restart. Nothing here is saved; this is the design prototype. The real app syncs to the boss and works offline.', quick(){}, async play(){}}
+];
+
+async function tap(sel,{root='#staff',fast=false}={}){
+  const r=document.querySelector(root); let el=r.querySelector(sel); if(!el) return;
+  el.scrollIntoView({block:'nearest',inline:'nearest'}); await sleep(fast?90:240);
+  el=r.querySelector(sel)||el; el.classList.add('tapfx'); const rp=document.createElement('span'); rp.className='ripple'; el.appendChild(rp);
+  await sleep(fast?150:380); tourClick=true; el.click(); tourClick=false; await sleep(fast?70:200);
+}
+async function choose(sel,val){ const el=document.querySelector('#staff '+sel); if(!el) return; el.classList.add('typing'); await sleep(350); el.value=val; el.dispatchEvent(new Event('change',{bubbles:true})); await sleep(250); }
+async function typeInto(sel,val){ const el=document.querySelector('#staff '+sel); if(!el) return; el.scrollIntoView({block:'center'}); el.classList.add('typing'); el.value='';
+  for(const ch of val){ el.value+=ch; await sleep(70); } await sleep(200); el.dispatchEvent(new Event('change',{bubbles:true})); await sleep(250); }
+
+function goTo(i){ S=fresh(); lastFeed=0; for(let j=1;j<=i;j++){ STEPS[j].quick(); S.done.add(j); } if(STEPS[i].at) S.screen=STEPS[i].at; S.basket=[]; S.toast=null; S.boss.banner=S.reqs.find(r=>r.st==='pending')?.rid||null; step=i; render(); }
+async function next(){ if(busy||step>=STEPS.length-1) return; step++; for(let j=1;j<step;j++) if(!S.done.has(j)){ STEPS[j].quick(); S.done.add(j); }
+  busy=true; render(); try{ await STEPS[step].play(); }catch(e){ console.error(e); } S.done.add(step); busy=false; render(); }
+
+function renderTour(){ const s=STEPS[step], T=totals();
+  document.getElementById('tour').innerHTML = `<div><div class="eyebrow">Design walkthrough</div><h1>Shift POS</h1></div>
+  <div class="card"><div class="stepno">Step ${step} of ${STEPS.length-1}</div><h2>${s.t}</h2><p>${s.d}</p>
+  <div class="prog"><i style="width:${step/(STEPS.length-1)*100}%"></i></div>
+  <div class="ctrls"><button class="blk sm" data-a="back" ${busy||step===0?'disabled':''}>Back</button><button class="blk sm primary" data-a="next" ${busy||step>=STEPS.length-1?'disabled':''}>${busy?'Playing…':'Next'}</button><button class="blk sm ghost" data-a="restart" ${busy?'disabled':''}>Restart</button></div></div>
+  <div class="card math"><div class="lbl" style="margin-bottom:6px">What the app works out</div>
+  Sales <b>${R(T.sales)}</b> = card <b>${R(T.card)}</b> + cash <b>${R(T.cash)}</b><br>
+  Expected cash = float <b>${R(S.float)}</b> + cash <b>${R(T.cash)}</b> − expenses <b>${R(T.exp)}</b> = <b>${R(T.expCash)}</b><br>
+  Super Cheese expected = open 25 + in 0 − out 0 − sold <b>${fq(sold('supercheese'))}</b> = <b>${fq(expected('supercheese'))}</b></div>
+  <ol class="steps">${STEPS.map((x,i)=>`<li><button class="${i===step?'on':''} ${i<step?'done':''}" data-a="goto" data-i="${i}" ${busy?'disabled':''}><span class="num">${String(i).padStart(2,'0')}</span>${x.t}</button></li>`).join('')}</ol>`;
+  document.getElementById('swStaff').classList.toggle('primary',S.view==='staff');
+  document.getElementById('swBoss').classList.toggle('primary',S.view==='boss');
+}
+function render(){ renderStaff(); renderBoss(); renderTour(); document.getElementById('stage').dataset.view=S.view; }
+
+/* ---------- Actions ---------- */
+const A = {
+  pickUser:d=>{ S.pinUser=d.id; S.pin=''; },
+  pin:d=>{ if(S.pin.length<4) S.pin+=d.d; if(S.pin.length===4){ S.user=S.pinUser; S.screen='clockin'; log(`${PEOPLE[S.user]} signed in`); } },
+  pinDel:()=>{ S.pin=S.pin.slice(0,-1); },
+  startShift:()=>{ S.clockedIn=true; S.screen='sell'; log('Night shift opened · float R200'); },
+  correct:()=>toast('Changes are flagged on the report'),
+  cat:d=>{ S.cat=d.c; }, add:d=>addItem(d.id), dec:d=>decItem(d.id),
+  openPay:()=>{ if(S.basket.length) S.sheet='pay'; },
+  payMode:d=>{ S.pay={mode:d.m,tendered:null,card:null}; },
+  tender:d=>{ S.pay.tendered=+d.v; }, splitCard:d=>{ S.pay.card=+d.v; },
+  confirmPay:()=>recordSale(), closeSheet:()=>{ S.sheet=null; S.share=null; },
+  nav:d=>{ if(S.locked && ['close','report'].includes(d.s)){ S.screen='report'; return; } S.screen=d.s; },
+  siAdd:d=>{ S.si.qty=r1(S.si.qty + +d.v); }, siClear:()=>{ S.si.qty=0; },
+  saveIn:()=>{ if(S.si.qty>0){ addStockIn(S.si.pid,S.si.qty); toast(`+${q(P(S.si.pid),S.si.qty)} ${P(S.si.pid).name}`); S.si.qty=0; } },
+  soInc:()=>{ S.so.qty=r1(S.so.qty+P(S.so.pid).step); }, soDec:()=>{ S.so.qty=Math.max(P(S.so.pid).step,r1(S.so.qty-P(S.so.pid).step)); },
+  reason:d=>{ S.so.reason=d.r; },
+  sendOut:()=>{ if(left(S.so.pid)<S.so.qty){ toast('Not enough in stock'); return; } requestOut(S.so.pid,S.so.qty,S.so.reason); toast('Sent · waiting for approval'); setTimeout(buzz,60); },
+  skip5:d=>{ escalate(+d.rid); },
+  decide:d=>{ decide(+d.rid,d.ok==='1','Boss'); toast(d.ok==='1'?'Approved':'Rejected'); },
+  mgrDecide:d=>{ decide(+d.rid,true,'Manager'); },
+  exAmt:d=>{ S.ex.amt=+d.v; },
+  saveEx:()=>{ addExpense(S.ex.amt,S.ex.note.trim()); S.ex.note=''; },
+  pinOut:()=>{ S.pinOut=!S.pinOut; }, pinIn:()=>{ S.pinIn=!S.pinIn; },
+  lock:()=>lockShift(),
+  share:()=>{ S.sheet='share'; S.share='apps'; }, shareApp:()=>{ S.share='chats'; },
+  saveLocal:()=>{ toast('Saved on this phone'); S.sheet=null; S.share=null; },
+  shareTo:()=>{ S.share='sending'; render(); setTimeout(()=>{ sendReport(); S.sheet=null; S.share=null; toast('Sent'); render(); }, reduce?50:1100); },
+  bossTab:d=>{ S.boss.tab=d.t; },
+  view:d=>{ S.view=d.v; },
+  next:()=>{ next(); return true; }, back:()=>{ goTo(Math.max(0,step-1)); return true; },
+  restart:()=>{ goTo(0); return true; }, goto:d=>{ goTo(+d.i); return true; }
+};
+document.addEventListener('click',e=>{ const el=e.target.closest('[data-a]'); if(!el||el.disabled) return;
+  const inPhone = el.closest('.phone'); if(busy && inPhone && !tourClick) return;
+  const fn=A[el.dataset.a]; if(!fn) return; const handled=fn(el.dataset); if(handled!==true) render(); });
+document.addEventListener('change',e=>{ const el=e.target.closest('[data-in]'); if(!el) return; const k=el.dataset.in, v=el.value;
+  if(k==='count'){ const n=parseFloat(v); if(isNaN(n)) delete S.counts[el.dataset.id]; else S.counts[el.dataset.id]=n; }
+  else if(k==='cash'||k==='slip'){ const n=parseFloat(String(v).replace(/[^\d.]/g,'')); S[k]=isNaN(n)?'':n; }
+  else if(k==='siPid'){ S.si.pid=v; S.si.qty=0; }
+  else if(k==='soPid'){ S.so.pid=v; S.so.qty=P(v).step; }
+  else if(k==='exNote'){ S.ex.note=v; return; }
+  render(); });
+
+S=fresh(); render();
+})();
+</script>
