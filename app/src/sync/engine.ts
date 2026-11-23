@@ -1,11 +1,11 @@
-import { db } from '../app/store'
+import { db, getMeta } from '../app/store'
 import { flush } from '../data/outbox'
 import { supabase, deviceStaffId } from './client'
 import { makeSend } from './send'
 import { pull } from './pull'
 
-export type SyncState = { mode: 'phone' | 'online' | 'offline' | 'error'; waiting: number; lastOk?: string }
-let state: SyncState = { mode: supabase ? 'offline' : 'phone', waiting: 0 }
+export type SyncState = { mode: 'phone' | 'online' | 'offline' | 'error'; waiting: number; refused: number; lastOk?: string }
+let state: SyncState = { mode: supabase ? 'offline' : 'phone', waiting: 0, refused: 0 }
 const listeners = new Set<(s: SyncState) => void>()
 const set = (s: Partial<SyncState>) => { state = { ...state, ...s }; listeners.forEach(f => f(state)) }
 export const syncState = () => state
@@ -27,7 +27,8 @@ export async function syncNow(): Promise<void> {
       if (!navigator.onLine) { set({ mode: 'offline', waiting: await db.outbox.count() }); return }
       const r = await flush(db, makeSend(supabase))
       await pull(supabase, me)
-      set({ mode: r.failed ? 'offline' : 'online', waiting: await db.outbox.count(), lastOk: r.failed ? state.lastOk : new Date().toISOString() })
+      set({ mode: r.failed ? 'offline' : 'online', waiting: await db.outbox.count(), refused: await getMeta<number>('syncRefused', 0),
+        lastOk: r.failed ? state.lastOk : new Date().toISOString() })
     } while (again)
   } catch {
     set({ mode: navigator.onLine ? 'error' : 'offline', waiting: await db.outbox.count() })

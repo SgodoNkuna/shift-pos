@@ -1,6 +1,6 @@
 import type { SupabaseClient } from '@supabase/supabase-js'
 import type { OutboxEntry } from '../data/db'
-import { db } from '../app/store'
+import { db, getMeta, setMeta } from '../app/store'
 import { isPermanent, planSend } from './map'
 
 export class TransientError extends Error {}
@@ -21,6 +21,8 @@ export function makeSend(sb: SupabaseClient) {
     if (!error) return
     if (isPermanent(error)) {
       await db.audit.add({ at: new Date().toISOString(), by: 'sync', action: 'sync_refused', ref: e.id, detail: { table: e.table, code: error.code, message: error.message } })
+      await setMeta('syncRefused', (await getMeta<number>('syncRefused', 0)) + 1)
+      console.error('Server refused a change', e.table, error.code, error.message)
       return
     }
     throw new TransientError(error.message ?? 'network')

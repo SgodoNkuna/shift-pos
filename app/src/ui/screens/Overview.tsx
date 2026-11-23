@@ -5,6 +5,8 @@ import { shiftTotals } from '../../domain/calc'
 import { formatRand } from '../../domain/num'
 import { Header, useShiftData, useStaff } from '../kit'
 import { OutCard } from './StockOut'
+import { AlertsCard } from '../Alerts'
+import { supabase } from '../../sync/client'
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Johannesburg' })
 
@@ -28,6 +30,7 @@ export function Overview({ me, onStartShift, onOpenReport }: { me: StaffMember; 
     <div className="main enter">
       <Header title="Shop overview" sub={`${me.name} · ${me.role}`} />
       <div className="pad stack">
+        {supabase && <AlertsCard me={me} compact />}
         {last && !last.sentAt && <div className="banner warnb">The {last.kind} shift report for {last.date} has not been sent yet. {name(last.pinOutBy ?? last.openedBy)} should send it.
           <button className="blk sm" onClick={() => onOpenReport(last.id)}>Open that report</button></div>}
         {open && data && t ? <>

@@ -3,3 +3,7 @@ project_id = "qnlndzxlgfcoieqnpnfh"
 [functions.redeem-invite]
 # The person joining is not signed in yet.
 verify_jwt = false
+
+[functions.notify]
+# Checks its own shared secret (database) or the caller's login (test alert).
+verify_jwt = false

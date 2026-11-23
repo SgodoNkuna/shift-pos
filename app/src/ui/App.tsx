@@ -17,6 +17,8 @@ import { Overview } from './screens/Overview'
 import { deviceStaffId, supabase } from '../sync/client'
 import { onSync, startSync, syncState, type SyncState } from '../sync/engine'
 
+import { AlertsCard } from './Alerts'
+
 type Tab = 'sell' | 'in' | 'out' | 'exp' | 'close'
 const TABS: [Tab, string][] = [['sell', 'Sell'], ['in', 'In'], ['out', 'Out'], ['exp', 'Expense'], ['close', 'Close']]
 
@@ -32,6 +34,7 @@ function SyncLabel() {
   const text = s.mode === 'phone' ? 'On phone' : s.mode === 'online' ? (s.waiting ? `Sending ${s.waiting}` : 'Synced')
     : s.mode === 'offline' ? `Offline${s.waiting ? ` · ${s.waiting} waiting` : ''}` : 'Sync problem'
   const tip = s.mode === 'phone' ? 'Saved on this phone only.' : s.mode === 'online' ? 'Saved and shared with the boss.' : 'Saved on this phone. It sends when the internet is back.'
+  if (s.refused) return <span className="net off bad" title="The server refused a change. Tell the manager; it is listed in the change log on this phone."><i style={{ background: 'var(--bad)' }} />{s.refused} not saved</span>
   return <span className={`net ${s.mode === 'online' ? '' : 'off'}`} title={tip}><i />{text}</span>
 }
 
@@ -98,6 +101,7 @@ function Shell() {
       {menu === 'menu' && me && <Sheet title="Menu" onClose={() => setMenu(null)}>
         {lead && <button className="blk" onClick={() => { setLeadTill(false); setReportId(null); setMenu(null) }}>Overview</button>}
         {lead && <button className="blk" onClick={() => setMenu('people')}>People</button>}
+        {deviceId && <AlertsCard me={me} />}
         <button className="blk" onClick={signOut}>Sign out</button>
       </Sheet>}
       {menu === 'people' && me && <People me={me} onClose={() => setMenu(null)} />}

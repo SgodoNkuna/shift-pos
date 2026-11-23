@@ -5,11 +5,12 @@ on:
     branches: [main]
   workflow_dispatch:
 
-# None of these are secrets: the publishable key ships inside the app, and the account id is in dashboard links.
+# None of these are secrets: the publishable key and the alert (VAPID) public key ship inside the app, and the account id is in dashboard links.
 # The only secret is CLOUDFLARE_API_TOKEN (repo Settings → Secrets and variables → Actions).
 env:
   SUPABASE_URL: https://qnlndzxlgfcoieqnpnfh.supabase.co
   SUPABASE_PUBLISHABLE_KEY: sb_publishable_H4DZIviQXGnWJbLvyQLQ9Q_4BGO0Ojv
+  VAPID_PUBLIC_KEY: BJCSMa_4G-oHjEPhGyJLTr2FjT-LBUQW-1mucgBwjEDHAmlPRf2C9KeCQ0Yf4fE_SXIv--WwIbv_ZbGOe73IzDg
   CLOUDFLARE_ACCOUNT_ID: cfcce0a03af3727949d00cdb2f6828b8
 
 concurrency:
@@ -36,6 +37,7 @@ jobs:
         env:
           VITE_SUPABASE_URL: ${{ env.SUPABASE_URL }}
           VITE_SUPABASE_KEY: ${{ env.SUPABASE_PUBLISHABLE_KEY }}
+          VITE_VAPID_PUBLIC_KEY: ${{ env.VAPID_PUBLIC_KEY }}
       - name: Check the Cloudflare token is set
         if: ${{ env.CLOUDFLARE_API_TOKEN == '' }}
         run: |

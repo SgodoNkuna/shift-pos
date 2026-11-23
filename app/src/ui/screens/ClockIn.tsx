@@ -4,6 +4,8 @@ import type { StaffMember } from '../../data/db'
 import { displayName } from '../../domain/calc'
 import { formatQty, formatRand, shiftFor } from '../../domain/num'
 import { catLabel, Header, useToast } from '../kit'
+import { AlertsCard } from '../Alerts'
+import { supabase } from '../../sync/client'
 import { categoryOrder, sortProducts } from '../../domain/order'
 
 export function ClockIn({ me }: { me: StaffMember }) {
@@ -21,6 +23,7 @@ export function ClockIn({ me }: { me: StaffMember }) {
     <div className="main enter">
       <Header title="Clock in" sub={`${kind === 'day' ? 'Day' : 'Night'} shift · ${date} · ${me.name}`} />
       <div className="pad stack">
+        {supabase && <AlertsCard me={me} compact />}
         <div className="note">Opening stock comes from the <b>{next?.from ?? '…'}</b>. Nobody types it again. If a number looks wrong, tell the manager before you start.</div>
         {!products.length && <div className="banner warnb">No products yet. A manager or the boss adds them first.</div>}
         {cats.map(c => (
