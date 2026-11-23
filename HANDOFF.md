@@ -1,6 +1,6 @@
 # Handoff: where the build stopped
 
-Moved from a cloud session to a local machine on 23 Nov 2026.
+Code lives at https://github.com/SgodoNkuna/shift-pos (private). Moved from a cloud session on 23 Nov 2026.
 
 ## Read these first
 - Design (approved): `docs/superpowers/specs/2026-11-23-shift-pos-design.md`
@@ -21,8 +21,7 @@ Moved from a cloud session to a local machine on 23 Nov 2026.
 Note: the app uses React 19 (the plan says 18; 19 is fine).
 
 ## Still needed from the owner
-- An empty private GitHub repo to push to (`shift-pos`)
-- Supabase project: decide which organization (Task 10)
+- Supabase (Task 10): **decided: a separate, free Supabase organization just for the shop.** Do not use the "African Women Investment Network" org. The owner creates the new org at https://supabase.com/dashboard/new, then the project goes in it.
 - Cloudflare API token with "Cloudflare Pages: Edit" (Task 13)
 
 ## Start the local session with
