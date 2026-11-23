@@ -1,0 +1,141 @@
+import { roundQty, formatQty, formatRand } from './num'
+import type { Product, Sale, ShiftData } from './types'
+
+export interface ItemLine {
+  productId: string
+  open: number
+  stockIn: number
+  /** Approved stock out */
+  out: number
+  pendingOut: number
+  /** Sold on the till (voided sales excluded) */
+  sold: number
+  expected: number
+  counted: number | null
+  diff: number | null
+  diffCents: number | null
+  salesCents: number
+  stockValueCents: number
+}
+
+export interface ShiftTotals {
+  salesCents: number
+  cardCents: number
+  cashCents: number
+  expensesCents: number
+  expectedCashCents: number
+  cashDiffCents: number | null
+  cardDiffCents: number | null
+  categorySalesCents: Record<string, number>
+}
+
+export type FlagCode = 'stock_diff' | 'cash_diff' | 'card_diff' | 'cash_ok' | 'card_ok' | 'stock_out'
+  | 'low_stock' | 'category_mismatch' | 'category_ok' | 'void'
+export interface Flag { level: 'bad' | 'warn' | 'ok' | 'info'; code: FlagCode; text: string; productId?: string }
+
+export type LockReason = 'pending_out' | 'no_cash_count' | 'no_card_slip' | 'missing_pin_out' | 'missing_pin_in'
+
+const live = (sales: Sale[]) => sales.filter(s => !s.void)
+const sumBy = <T>(xs: T[], f: (x: T) => number) => xs.reduce((a, x) => a + f(x), 0)
+
+/** Shows the price when two products share a name (e.g. two Rizlas). */
+export function displayName(p: Product, all: Product[]): string {
+  return all.filter(x => x.name === p.name).length > 1 ? `${p.name} R${p.priceCents / 100}` : p.name
+}
+
+export function itemLines(d: ShiftData): ItemLine[] {
+  const sales = live(d.sales)
+  return d.products.map(p => {
+    const moves = d.moves.filter(m => m.productId === p.id)
+    const qtyOf = (f: (m: (typeof moves)[number]) => boolean) => roundQty(sumBy(moves.filter(f), m => m.qty))
+    const open = d.shift.opening[p.id] ?? 0
+    const stockIn = qtyOf(m => m.kind === 'in' && m.status === 'done')
+    const out = qtyOf(m => m.kind === 'out' && m.status === 'approved')
+    const pendingOut = qtyOf(m => m.kind === 'out' && m.status === 'pending')
+    const lines = sales.flatMap(s => s.lines.filter(l => l.productId === p.id))
+    const sold = roundQty(sumBy(lines, l => l.qty))
+    const salesCents = Math.round(sumBy(lines, l => l.qty * l.unitCents))
+    const expected = roundQty(open + stockIn - out - pendingOut - sold)
+    const c = d.shift.counts?.[p.id]
+    const counted = c == null ? null : roundQty(c)
+    const diff = counted == null ? null : roundQty(counted - expected)
+    return {
+      productId: p.id, open, stockIn, out, pendingOut, sold, expected, counted, diff,
+      diffCents: diff == null ? null : Math.round(diff * p.priceCents),
+      salesCents,
+      stockValueCents: Math.round((counted ?? expected) * p.priceCents),
+    }
+  })
+}
+
+export function shiftTotals(d: ShiftData): ShiftTotals {
+  const sales = live(d.sales)
+  const salesCents = Math.round(sumBy(sales, s => sumBy(s.lines, l => l.qty * l.unitCents)))
+  const cardCents = sumBy(sales, s => sumBy(s.payments.filter(p => p.method === 'card'), p => p.cents))
+  const cashCents = salesCents - cardCents
+  const expensesCents = sumBy(d.expenses, e => e.cents)
+  const expectedCashCents = d.shift.floatCents + cashCents - expensesCents
+  const categorySalesCents: Record<string, number> = {}
+  for (const s of sales) for (const l of s.lines) {
+    const cat = d.products.find(p => p.id === l.productId)?.categoryId ?? 'unknown'
+    categorySalesCents[cat] = Math.round((categorySalesCents[cat] ?? 0) + l.qty * l.unitCents)
+  }
+  return {
+    salesCents, cardCents, cashCents, expensesCents, expectedCashCents,
+    cashDiffCents: d.shift.cashCountedCents == null ? null : d.shift.cashCountedCents - expectedCashCents,
+    cardDiffCents: d.shift.cardSlipCents == null ? null : d.shift.cardSlipCents - cardCents,
+    categorySalesCents,
+  }
+}
+
+export const changeDue = (totalCents: number, tenderedCents: number): number => tenderedCents - totalCents
+
+export function shiftFlags(d: ShiftData): Flag[] {
+  const flags: Flag[] = []
+  const name = (id: string) => { const p = d.products.find(x => x.id === id)!; return displayName(p, d.products) }
+  const prod = (id: string) => d.products.find(x => x.id === id)!
+  const lines = itemLines(d)
+
+  for (const l of lines) if (l.diff) {
+    const p = prod(l.productId)
+    flags.push({ level: 'bad', code: 'stock_diff', productId: p.id,
+      text: `${name(p.id)}: counted ${formatQty(p, l.counted!)}, expected ${formatQty(p, l.expected)} (${l.diff > 0 ? '+' : '−'}${formatQty(p, Math.abs(l.diff))} · ${formatRand(l.diffCents!)})` })
+  }
+
+  const t = shiftTotals(d)
+  if (t.cardDiffCents != null) flags.push(t.cardDiffCents
+    ? { level: 'bad', code: 'card_diff', text: `Card slip ${formatRand(d.shift.cardSlipCents!)} vs till card sales ${formatRand(t.cardCents)} (${formatRand(t.cardDiffCents)})` }
+    : { level: 'ok', code: 'card_ok', text: `Card slip matches till card sales (${formatRand(t.cardCents)})` })
+  if (t.cashDiffCents != null) flags.push(t.cashDiffCents
+    ? { level: 'bad', code: 'cash_diff', text: `Cash counted ${formatRand(d.shift.cashCountedCents!)} vs expected ${formatRand(t.expectedCashCents)} (${formatRand(t.cashDiffCents)})` }
+    : { level: 'ok', code: 'cash_ok', text: `Cash counted matches expected (${formatRand(t.expectedCashCents)})` })
+
+  for (const m of d.moves.filter(m => m.kind === 'out')) {
+    const p = prod(m.productId)
+    flags.push({ level: m.status === 'rejected' ? 'bad' : m.status === 'pending' ? 'warn' : 'info', code: 'stock_out', productId: p.id,
+      text: `Stock out ${formatQty(p, m.qty)} ${name(p.id)} · ${m.reason ?? 'No reason'} · ${m.status}${m.decidedBy ? ` by ${m.decidedBy}` : ''}` })
+  }
+
+  for (const s of d.sales.filter(s => s.void)) flags.push({ level: 'warn', code: 'void',
+    text: `Voided sale ${formatRand(Math.round(sumBy(s.lines, l => l.qty * l.unitCents)))} · ${s.void!.reason} · by ${s.void!.by}` })
+
+  const low = lines.filter(l => (l.counted ?? l.expected) <= prod(l.productId).lowAt)
+  if (low.length) flags.push({ level: 'warn', code: 'low_stock',
+    text: `Low or out of stock: ${low.map(l => `${name(l.productId)} ${formatQty(prod(l.productId), l.counted ?? l.expected)}`).join(', ')}` })
+
+  const catSum = sumBy(Object.values(t.categorySalesCents), x => x)
+  flags.push(catSum === t.salesCents
+    ? { level: 'ok', code: 'category_ok', text: `Category totals add up to total sales (${formatRand(t.salesCents)})` }
+    : { level: 'bad', code: 'category_mismatch', text: `Category totals ${formatRand(catSum)} do not match total sales ${formatRand(t.salesCents)}` })
+  return flags
+}
+
+export function canLock(d: ShiftData): { ok: boolean; reasons: LockReason[] } {
+  const reasons: LockReason[] = []
+  if (d.moves.some(m => m.kind === 'out' && m.status === 'pending')) reasons.push('pending_out')
+  if (d.shift.cashCountedCents == null) reasons.push('no_cash_count')
+  if (d.shift.cardSlipCents == null) reasons.push('no_card_slip')
+  if (!d.shift.pinOutBy) reasons.push('missing_pin_out')
+  if (!d.shift.pinInBy) reasons.push('missing_pin_in')
+  return { ok: reasons.length === 0, reasons }
+}
