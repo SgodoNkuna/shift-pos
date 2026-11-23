@@ -27,11 +27,14 @@ Not yet: correcting an opening count at clock-in, boss Settings screen (float, r
 | 10. Supabase | Done. Schema, roles, RLS, server-checked PINs (41/41 role tests, `supabase/tests/rls_test.sql`). Sign-ups closed. Products + first opening seeded. `redeem-invite` edge function deployed. Sync engine (outbox send rules, pull, realtime). Live two-phone test: `app/e2e/live.e2e.cjs` (creates test staff via SQL first; clean up after). |
 | 11. Push buzz, escalation, reminders | Not started (approvals are live while the app is open) |
 | 12. Boss screens | Overview done (open shift, approvals, activity, unsent report). Settings and product/price editing not started |
-| 13. Deploy | Cloudflare Pages project `shift-pos` → https://shift-pos.pages.dev. GitHub Action `.github/workflows/deploy.yml` deploys on push to main **once the repo secret `CLOUDFLARE_API_TOKEN` is added**. (Wrangler upload from the cloud session fails: the proxy rewrites the upload token.) |
+| 13. Deploy | **Live at https://shift-pos.pages.dev.** GitHub Action `.github/workflows/deploy.yml` tests, builds and deploys on every push to main (repo secret `CLOUDFLARE_API_TOKEN`). Don't deploy with wrangler from the cloud session: the proxy rewrites the upload token. |
 
 Run SQL against the project with `python3 scripts/sbsql.py <file.sql>` (cloud session: the token is injected by the network proxy). Keep Supabase's GitHub "Deploy to production" **off**; migrations are applied with `--migrate <name>` and the file names match the versions Supabase recorded.
 
 Note: the app uses React 19 (the plan says 18; 19 is fine).
+
+## Staff
+Boss Ta Vuyo, manager Rori, employee Wisani Nkuna (phones in the `staff` table, not in git). First invites sent 24 Nov, valid 7 days; new ones from Menu → People.
 
 ## Still needed from the owner
 - Supabase: done. Separate account/org; project `qnlndzxlgfcoieqnpnfh`, URL https://qnlndzxlgfcoieqnpnfh.supabase.co
