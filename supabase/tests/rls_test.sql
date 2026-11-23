@@ -1,0 +1,75 @@
+-- Role tests. Everything runs in one block that always ends by raising,
+-- so the whole thing rolls back and leaves no data. The message is the report.
+do $$
+declare
+  e uuid := gen_random_uuid(); e2 uuid := gen_random_uuid(); m uuid := gen_random_uuid(); b uuid := gen_random_uuid();
+  se uuid; se2 uuid; sm uuid; sb uuid;
+  s1 uuid := gen_random_uuid(); s2 uuid := gen_random_uuid(); mv uuid := gen_random_uuid(); mv2 uuid := gen_random_uuid();
+  report text := ''; passed int := 0; failed int := 0;
+  n bigint; ok boolean;
+  c record;
+begin
+  insert into auth.users (id, email, aud, role) values
+    (e,'e@test.local','authenticated','authenticated'),(e2,'e2@test.local','authenticated','authenticated'),
+    (m,'m@test.local','authenticated','authenticated'),(b,'b@test.local','authenticated','authenticated');
+  insert into public.staff (user_id,name,role) values (e,'Employee A','employee') returning id into se;
+  insert into public.staff (user_id,name,role) values (e2,'Employee B','employee') returning id into se2;
+  insert into public.staff (user_id,name,role) values (m,'Manager','manager') returning id into sm;
+  insert into public.staff (user_id,name,role) values (b,'Boss','boss') returning id into sb;
+  insert into products values ('t_supercheese','Super Cheese','main','ea',1,3,3000,true);
+  insert into product_costs (product_id,cents) values ('t_supercheese',1400);
+  insert into shifts (id,kind,date,opened_by,opened_at,opening,float_cents) values (s1,'night','2026-11-28',se,now(),'{"t_supercheese":25}',20000);
+  insert into moves (id,shift_id,product_id,qty,kind,status,reason,by_staff,at) values (mv,s1,'t_supercheese',1,'out','pending','Given to boss',se,now());
+
+  for c in select * from (values
+    -- label, as user, sql, expect: 'ok' | 'deny' | 'n=<count>'
+    (1,'employee cannot see cost prices', 'e', 'select count(*) from product_costs', 'n=0'),
+    (2,'manager cannot see cost prices', 'm', 'select count(*) from product_costs', 'n=0'),
+    (3,'boss can see cost prices', 'b', 'select count(*) from product_costs', 'n=1'),
+    (4,'employee cannot add a price', 'e', $q$insert into prices (product_id,cents) values ('t_supercheese',3500)$q$, 'deny'),
+    (5,'manager can add a price', 'm', $q$insert into prices (product_id,cents) values ('t_supercheese',3500)$q$, 'ok'),
+    (6,'employee cannot change a product price', 'e', $q$update products set price_cents=1 where id='t_supercheese'$q$, 'deny'),
+    (7,'employee can sell on own shift', 'e', format($q$insert into sales values (gen_random_uuid(),%L,now(),%L,'[{"productId":"t_supercheese","qty":1,"unitCents":3000}]','[{"method":"cash","cents":3000}]',null)$q$, s1, se), 'ok'),
+    (8,'employee cannot sell as someone else', 'e', format($q$insert into sales values (gen_random_uuid(),%L,now(),%L,'[]','[]',null)$q$, s1, sm), 'deny'),
+    (9,'other employee cannot see an open shift''s sales', 'e2', 'select count(*) from sales', 'n=0'),
+    (10,'employee cannot approve stock out', 'e', format($q$update moves set status='approved' where id=%L$q$, mv), 'deny'),
+    (11,'employee cannot add an already-approved stock out', 'e', format($q$insert into moves (id,shift_id,product_id,qty,kind,status,by_staff,at) values (gen_random_uuid(),%L,'t_supercheese',1,'out','approved',%L,now())$q$, s1, se), 'deny'),
+    (12,'cannot lock while stock out is pending', 'e', format($q$update shifts set cash_counted_cents=23000, card_slip_cents=0, pin_out_by=%L, pin_in_by=%L, locked_at=now() where id=%L$q$, se, se2, s1), 'deny'),
+    (13,'manager can approve stock out', 'm', format($q$update moves set status='approved', decided_by=%L, decided_at=now() where id=%L$q$, sm, mv), 'ok'),
+    (14,'approved stock out cannot be changed again', 'b', format($q$update moves set status='rejected' where id=%L$q$, mv), 'deny'),
+    (15,'cannot lock without cash count and PINs', 'e', format($q$update shifts set locked_at=now() where id=%L$q$, s1), 'deny'),
+    (16,'employee can lock own shift when complete', 'e', format($q$update shifts set cash_counted_cents=23000, card_slip_cents=0, pin_out_by=%L, pin_in_by=%L, locked_at=now() where id=%L$q$, se, se2, s1), 'ok'),
+    (17,'employee cannot change a locked shift', 'e', format($q$update shifts set counts='{"t_supercheese":99}' where id=%L$q$, s1), 'deny'),
+    (18,'employee can mark a locked shift as sent', 'e', format($q$update shifts set sent_at=now() where id=%L$q$, s1), 'ok'),
+    (19,'no expenses on a locked shift', 'e', format($q$insert into expenses values (gen_random_uuid(),%L,2000,'Late',%L,now())$q$, s1, se), 'deny'),
+    (20,'incoming employee can read the last locked shift', 'e2', 'select count(*) from shifts', 'n=1'),
+    (21,'manager cannot change a locked shift', 'm', format($q$update shifts set counts='{"t_supercheese":1}' where id=%L$q$, s1), 'deny'),
+    (22,'boss can correct a locked shift', 'b', format($q$update shifts set counts='{"t_supercheese":23}' where id=%L$q$, s1), 'ok'),
+    (23,'sales cannot be edited, only voided', 'e', 'update sales set payments=''[]''', 'deny'),
+    (24,'manager cannot create a boss', 'm', $q$insert into staff (name,role) values ('X','boss')$q$, 'deny'),
+    (25,'manager can add an employee', 'm', $q$insert into staff (name,role) values ('New','employee')$q$, 'ok'),
+    (26,'employee cannot add staff', 'e', $q$insert into staff (name,role) values ('Y','employee')$q$, 'deny'),
+    (27,'employee cannot read the audit log', 'e', 'select count(*) from audit', 'n=0'),
+    (28,'employee cannot change settings', 'e', $q$update settings set value='true' where key='multi_seller'$q$, 'deny'),
+    (29,'boss can change settings', 'b', $q$update settings set value='true' where key='multi_seller'$q$, 'ok')
+  ) as t(no,label,who,sql,expect) order by no
+  loop
+    execute 'reset role';
+    perform set_config('request.jwt.claims', json_build_object('sub', case c.who when 'e' then e when 'e2' then e2 when 'm' then m else b end, 'role','authenticated')::text, true);
+    execute 'set local role authenticated';
+    begin
+      if c.expect like 'n=%' then
+        execute c.sql into n;
+        ok := n = substr(c.expect,3)::bigint;
+      else
+        execute c.sql; get diagnostics n = row_count;
+        ok := (c.expect = 'ok') = (n > 0);
+      end if;
+    exception when others then
+      ok := c.expect = 'deny';
+    end;
+    if ok then passed := passed + 1; else failed := failed + 1; report := report || ' FAIL#' || c.no || ' ' || c.label || ';'; end if;
+  end loop;
+  execute 'reset role';
+  raise exception 'RLS TESTS: % passed, % failed.%', passed, failed, report;
+end $$;
