@@ -1,0 +1,42 @@
+name: Test and deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# None of these are secrets: the publishable key ships inside the app, and the account id is in dashboard links.
+# The only secret is CLOUDFLARE_API_TOKEN (repo Settings → Secrets and variables → Actions).
+env:
+  SUPABASE_URL: https://qnlndzxlgfcoieqnpnfh.supabase.co
+  SUPABASE_PUBLISHABLE_KEY: sb_publishable_H4DZIviQXGnWJbLvyQLQ9Q_4BGO0Ojv
+  CLOUDFLARE_ACCOUNT_ID: cfcce0a03af3727949d00cdb2f6828b8
+
+concurrency:
+  group: deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: app/package-lock.json
+      - run: npm ci
+      - run: npm test
+      - name: Build
+        run: npm run build
+        env:
+          VITE_SUPABASE_URL: ${{ env.SUPABASE_URL }}
+          VITE_SUPABASE_KEY: ${{ env.SUPABASE_PUBLISHABLE_KEY }}
+      - name: Deploy to Cloudflare Pages
+        run: npx --yes wrangler@4.52.0 pages deploy dist --project-name shift-pos --branch main --commit-dirty=true
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
