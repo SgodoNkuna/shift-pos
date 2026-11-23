@@ -4,7 +4,8 @@ import type { Expense, Payment, Sale, Shift, ShiftData, StockMove } from '../dom
 import type { ShiftDB, SyncTable } from './db'
 
 export class LockError extends Error {
-  constructor(public reasons: LockReason[]) { super(`Cannot lock: ${reasons.join(', ')}`) }
+  reasons: LockReason[]
+  constructor(reasons: LockReason[]) { super(`Cannot lock: ${reasons.join(', ')}`); this.reasons = reasons }
 }
 export class ShiftLockedError extends Error { constructor() { super('This shift is locked') } }
 export class PaymentError extends Error { constructor(msg: string) { super(msg) } }
