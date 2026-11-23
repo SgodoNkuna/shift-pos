@@ -6,6 +6,8 @@ import { displayName, itemLines } from '../../domain/calc'
 import { formatQty, formatRand, roundQty } from '../../domain/num'
 import type { ShiftData, StockMove } from '../../domain/types'
 import { Header, PinPad, Sheet, useStaff, useToast } from '../kit'
+import { deviceStaffId, supabase } from '../../sync/client'
+import { syncNow } from '../../sync/engine'
 import { ProductSelect } from './ProductSelect'
 
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Johannesburg' })
@@ -28,7 +30,15 @@ export function OutCard({ m, data, me }: { m: StockMove; data: ShiftData; me: St
         ? <div className="two"><button className="blk okb sm" onClick={() => decide(true, me.id)}>Approve</button><button className="blk badb sm" onClick={() => decide(false, me.id)}>Reject</button></div>
         : <div className="two"><button className="blk sm" onClick={() => setAsking(true)}>Manager approves here</button><button className="blk sm ghost" onClick={() => setAsking(false)}>Manager rejects</button></div>)}
       {asking != null && <Sheet title={asking ? 'Approve with PIN' : 'Reject with PIN'} onClose={() => setAsking(null)}>
-        <PinPad people={staff.filter(s => s.role !== 'employee' && !s.locked)} prompt="Manager or boss" onOk={async l => { await decide(asking, l.id); setAsking(null) }} />
+        <PinPad people={staff.filter(s => s.role !== 'employee' && !s.locked)} prompt="Manager or boss" onOk={async (l, pin) => {
+          if (await deviceStaffId()) {
+            await syncNow()
+            const { data: r, error } = await supabase!.rpc('decide_out_with_pin', { p_move: m.id, p_lead: l.id, p_pin: pin, p_approve: asking })
+            if (error || r !== 'ok') { toast(r === 'not_pending' ? 'Already decided' : 'Could not save. Check the internet.'); return }
+            await syncNow(); toast(asking ? 'Approved' : 'Rejected')
+          } else await decide(asking, l.id)
+          setAsking(null)
+        }} />
       </Sheet>}
     </div>
   )

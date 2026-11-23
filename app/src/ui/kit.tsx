@@ -1,6 +1,7 @@
 import { createContext, useContext, useState, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, actions } from '../app/store'
+import { supabase } from '../sync/client'
 import type { StaffMember } from '../data/db'
 import { createPinGuard, MAX_TRIES } from '../auth/pin'
 import type { ShiftData } from '../domain/types'
@@ -45,9 +46,21 @@ export function useStaff(): StaffMember[] {
 /* ---------- PIN pad ---------- */
 const guard = createPinGuard()
 
-/** Checks a PIN for one person and records wrong tries. Five wrong tries lock the account. */
+/**
+ * Checks a PIN. Your own PIN is checked on this phone (works offline).
+ * Anyone else's is checked by the server, which locks it after 5 wrong tries.
+ */
 export async function verifyPin(m: StaffMember, pin: string): Promise<{ ok: boolean; msg?: string }> {
   const fresh = (await db.staff.get(m.id)) ?? m
+  if (!fresh.pinHash) {
+    if (!supabase) return { ok: false, msg: 'This person has no PIN on this phone.' }
+    const { data, error } = await supabase.rpc('check_pin', { p_staff: m.id, p_pin: pin })
+    if (error) return { ok: false, msg: 'Needs internet to check this PIN.' }
+    if (data === 'ok') return { ok: true }
+    if (data === 'locked') return { ok: false, msg: 'Locked after 5 wrong tries. Ask a manager to unlock it.' }
+    if (data === 'no_pin') return { ok: false, msg: `${m.name} has not set up their phone yet.` }
+    return { ok: false, msg: 'Wrong PIN.' }
+  }
   const r = await guard.check(fresh, pin)
   await db.staff.put({ ...fresh, failed: r.user.failed, locked: r.user.locked })
   if (r.ok) return { ok: true }
@@ -55,7 +68,7 @@ export async function verifyPin(m: StaffMember, pin: string): Promise<{ ok: bool
   return { ok: false, msg: `Wrong PIN. ${MAX_TRIES - r.user.failed} tries left.` }
 }
 
-export function PinPad({ people, onOk, prompt = 'Who is signing in?' }: { people: StaffMember[]; onOk: (m: StaffMember) => void; prompt?: string }) {
+export function PinPad({ people, onOk, prompt = 'Who is signing in?' }: { people: StaffMember[]; onOk: (m: StaffMember, pin: string) => void; prompt?: string }) {
   const [who, setWho] = useState<StaffMember | null>(people.length === 1 ? people[0] : null)
   const [pin, setPin] = useState('')
   const [msg, setMsg] = useState<string | null>(null)
@@ -66,7 +79,7 @@ export function PinPad({ people, onOk, prompt = 'Who is signing in?' }: { people
     if (next.length === 4) {
       const r = await verifyPin(who, next)
       setPin('')
-      if (r.ok) { setMsg(null); onOk(who) } else setMsg(r.msg ?? 'Wrong PIN')
+      if (r.ok) { setMsg(null); onOk(who, next) } else setMsg(r.msg ?? 'Wrong PIN')
     }
   }
   return (

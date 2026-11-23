@@ -4,7 +4,7 @@ do $$
 declare
   e uuid := gen_random_uuid(); e2 uuid := gen_random_uuid(); m uuid := gen_random_uuid(); b uuid := gen_random_uuid();
   se uuid; se2 uuid; sm uuid; sb uuid;
-  s1 uuid := gen_random_uuid(); s2 uuid := gen_random_uuid(); mv uuid := gen_random_uuid(); mv2 uuid := gen_random_uuid();
+  s1 uuid := gen_random_uuid(); s2 uuid := gen_random_uuid(); mv uuid := gen_random_uuid(); mv2 uuid := gen_random_uuid(); mv3 uuid := gen_random_uuid();
   report text := ''; passed int := 0; failed int := 0;
   n bigint; ok boolean;
   c record;
@@ -20,6 +20,11 @@ begin
   insert into product_costs (product_id,cents) values ('t_supercheese',1400);
   insert into shifts (id,kind,date,opened_by,opened_at,opening,float_cents) values (s1,'night','2026-11-28',se,now(),'{"t_supercheese":25}',20000);
   insert into moves (id,shift_id,product_id,qty,kind,status,reason,by_staff,at) values (mv,s1,'t_supercheese',1,'out','pending','Given to boss',se,now());
+  insert into shifts (id,kind,date,opened_by,opened_at,opening,float_cents) values (s2,'day','2026-11-29',se,now(),'{}',0);
+  insert into moves (id,shift_id,product_id,qty,kind,status,reason,by_staff,at) values
+    (mv2,s2,'t_supercheese',1,'out','pending','Sample',se,now()), (mv3,s2,'t_supercheese',1,'out','pending','Sample',se,now());
+  insert into private.staff_pins (staff_id,pin_hash) values
+    (sm, extensions.crypt('2222', extensions.gen_salt('bf',8))), (se2, extensions.crypt('3333', extensions.gen_salt('bf',8)));
 
   for c in select * from (values
     -- label, as user, sql, expect: 'ok' | 'deny' | 'n=<count>'
@@ -51,7 +56,19 @@ begin
     (26,'employee cannot add staff', 'e', $q$insert into staff (name,role) values ('Y','employee')$q$, 'deny'),
     (27,'employee cannot read the audit log', 'e', 'select count(*) from audit', 'n=0'),
     (28,'employee cannot change settings', 'e', $q$update settings set value='true' where key='multi_seller'$q$, 'deny'),
-    (29,'boss can change settings', 'b', $q$update settings set value='true' where key='multi_seller'$q$, 'ok')
+    (29,'boss can change settings', 'b', $q$update settings set value='true' where key='multi_seller'$q$, 'ok'),
+    (30,'employee can check the manager PIN', 'e', format($q$select (public.check_pin(%L,'2222')='ok')::int$q$, sm), 'n=1'),
+    (31,'employee approves with the manager PIN', 'e', format($q$select (public.decide_out_with_pin(%L,%L,'2222',true)='ok')::int$q$, mv2, sm), 'n=1'),
+    (32,'that approval is recorded as the manager', 'e', format($q$select count(*) from moves where id=%L and status='approved' and decided_by=%L$q$, mv2, sm), 'n=1'),
+    (33,'a wrong lead PIN does not approve', 'e', format($q$select (public.decide_out_with_pin(%L,%L,'9999',true)='wrong')::int$q$, mv3, sm), 'n=1'),
+    (34,'an employee PIN cannot approve', 'e', format($q$select (public.decide_out_with_pin(%L,%L,'3333',true)='not_lead')::int$q$, mv3, se2), 'n=1'),
+    (35,'five wrong PINs lock it', 'e', format($q$select count(*) from (select public.check_pin(%L,'0000') r from generate_series(1,5)) x where r='locked'$q$, se2), 'n=1'),
+    (36,'a locked PIN refuses the right PIN', 'e', format($q$select (public.check_pin(%L,'3333')='locked')::int$q$, se2), 'n=1'),
+    (37,'employee cannot unlock a PIN', 'e', format($q$select public.reset_pin_lock(%L)$q$, se2), 'deny'),
+    (38,'manager can unlock a PIN', 'm', format($q$select public.reset_pin_lock(%L)$q$, se2), 'ok'),
+    (39,'unlocked PIN works again', 'e', format($q$select (public.check_pin(%L,'3333')='ok')::int$q$, se2), 'n=1'),
+    (40,'nobody can read PIN hashes directly', 'b', 'select count(*) from private.staff_pins', 'deny'),
+    (41,'employee still cannot approve directly', 'e', format($q$update moves set status='approved' where id=%L$q$, mv3), 'deny')
   ) as t(no,label,who,sql,expect) order by no
   loop
     execute 'reset role';

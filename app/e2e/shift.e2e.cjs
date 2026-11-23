@@ -14,11 +14,13 @@ const [, , URL = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
   const step = async (what, fn) => { try { await fn(); console.log('ok  ', what) } catch (e) { console.log('FAIL', what, '-', e.message.split('\n')[0]); await shot('fail'); throw e } }
 
   await p.goto(URL)
+  const local = p.getByRole('button', { name: 'Try it on this phone only (test mode)' })
+  if (await local.isVisible().catch(() => false) || await local.waitFor({ timeout: 3000 }).then(() => true, () => false)) await local.click()
   await step('first-run setup as manager Rori', async () => {
     await p.getByLabel('Your name').fill('Rori'); await btn('manager').click()
     await p.getByLabel('New PIN (4 numbers)').fill('2222'); await p.getByLabel('Type the PIN again').fill('2222')
     await shot('01-setup'); await btn('Set up').click()
-    await p.getByText('Clock in', { exact: true }).waitFor()
+    await p.getByText('Shop overview').waitFor(); await shot('01b-overview')
   })
   await step('manager adds Employee A and Employee B', async () => {
     await btn('Menu').click(); await btn('People').click()

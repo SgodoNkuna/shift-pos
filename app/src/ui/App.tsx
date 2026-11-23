@@ -12,6 +12,10 @@ import { Expense } from './screens/Expense'
 import { ClockOut } from './screens/ClockOut'
 import { Report } from './screens/Report'
 import { People } from './screens/People'
+import { Join, Welcome } from './screens/Join'
+import { Overview } from './screens/Overview'
+import { deviceStaffId, supabase } from '../sync/client'
+import { onSync, startSync, syncState, type SyncState } from '../sync/engine'
 
 type Tab = 'sell' | 'in' | 'out' | 'exp' | 'close'
 const TABS: [Tab, string][] = [['sell', 'Sell'], ['in', 'In'], ['out', 'Out'], ['exp', 'Expense'], ['close', 'Close']]
@@ -22,8 +26,23 @@ function Clock() {
   return <span className="num">{now.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Johannesburg' })}</span>
 }
 
+function SyncLabel() {
+  const [s, setS] = useState<SyncState>(syncState())
+  useEffect(() => onSync(setS), [])
+  const text = s.mode === 'phone' ? 'On phone' : s.mode === 'online' ? (s.waiting ? `Sending ${s.waiting}` : 'Synced')
+    : s.mode === 'offline' ? `Offline${s.waiting ? ` · ${s.waiting} waiting` : ''}` : 'Sync problem'
+  const tip = s.mode === 'phone' ? 'Saved on this phone only.' : s.mode === 'online' ? 'Saved and shared with the boss.' : 'Saved on this phone. It sends when the internet is back.'
+  return <span className={`net ${s.mode === 'online' ? '' : 'off'}`} title={tip}><i />{text}</span>
+}
+
+const joinToken = new URLSearchParams(location.search).get('join')
+
 function Shell() {
   const staffCount = useLiveQuery(() => db.staff.count())
+  const [deviceId, setDeviceId] = useState<string | null | undefined>(supabase ? undefined : null)
+  const [localMode, setLocalMode] = useState(false)
+  const [leadTill, setLeadTill] = useState(false)
+  useEffect(() => { if (supabase) { void deviceStaffId().then(setDeviceId); startSync() } }, [])
   const staff = useStaff()
   const [me, setMe] = useState<StaffMember | null>(null)
   const [tab, setTab] = useState<Tab>('sell')
@@ -32,25 +51,29 @@ function Shell() {
   const open = useLiveQuery(() => openShiftNow(), [], undefined)
   const data = useShiftData(reportId ?? open?.id)
   const pending = data?.moves.filter(m => m.kind === 'out' && m.status === 'pending').length ?? 0
-  const signOut = () => { setMe(null); setReportId(null); setTab('sell'); setMenu(null) }
+  const signOut = () => { setMe(null); setReportId(null); setTab('sell'); setMenu(null); setLeadTill(false) }
+  const lead = me != null && me.role !== 'employee'
 
-  if (staffCount === undefined) return null
+  if (staffCount === undefined || deviceId === undefined) return null
   const bar = (
     <div className="sbar">
       <Clock />
       <span>{me ? `${me.name} · ${me.role}` : ''}</span>
-      <span className="net off" title="Saved on this phone. Syncing to the boss comes in the next update."><i />On phone</span>
+      <SyncLabel />
       {me && <button className="linkbtn" onClick={() => setMenu('menu')}>Menu</button>}
     </div>)
 
   let body
-  if (staffCount === 0) body = <Setup onDone={setMe} />
+  if (joinToken && !me) body = <Join token={joinToken} onDone={m => { setDeviceId(m.id); setMe(m) }} />
+  else if (staffCount === 0) body = supabase && !localMode ? <Welcome onLocalMode={() => setLocalMode(true)} /> : <Setup onDone={setMe} />
   else if (!me) body = (
     <div className="main enter"><div className="pad stack pinwrap">
       <div className="mark"><span>SHIFT</span>POS</div>
-      <PinPad people={staff} onOk={setMe} />
+      <PinPad people={deviceId ? staff.filter(s => s.id === deviceId) : staff} onOk={m => setMe(m)} />
     </div></div>)
-  else if (reportId && data) body = <Report data={data} me={me} onDone={signOut} />
+  else if (reportId && data) body = <Report data={data} me={me} onDone={lead ? () => setReportId(null) : signOut} />
+  else if (lead && !leadTill && !(open && open.openedBy === me.id))
+    body = <Overview me={me} onStartShift={() => setLeadTill(true)} onOpenReport={id => setReportId(id)} />
   else if (!open) body = <ClockIn me={me} />
   else if (open.openedBy !== me.id && me.role === 'employee') body = (
     <div className="main"><div className="pad stack">
@@ -73,7 +96,8 @@ function Shell() {
       {bar}
       {body}
       {menu === 'menu' && me && <Sheet title="Menu" onClose={() => setMenu(null)}>
-        {me.role !== 'employee' && <button className="blk" onClick={() => setMenu('people')}>People</button>}
+        {lead && <button className="blk" onClick={() => { setLeadTill(false); setReportId(null); setMenu(null) }}>Overview</button>}
+        {lead && <button className="blk" onClick={() => setMenu('people')}>People</button>}
         <button className="blk" onClick={signOut}>Sign out</button>
       </Sheet>}
       {menu === 'people' && me && <People me={me} onClose={() => setMenu(null)} />}

@@ -1,0 +1,5 @@
+project_id = "qnlndzxlgfcoieqnpnfh"
+
+[functions.redeem-invite]
+# The person joining is not signed in yet.
+verify_jwt = false

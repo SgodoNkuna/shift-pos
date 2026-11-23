@@ -12,6 +12,7 @@
     "e2e": "node e2e/shift.e2e.cjs"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.119.2",
     "@tailwindcss/vite": "^4.3.5",
     "dexie": "^4.4.7",
     "dexie-react-hooks": "^4.4.0",

@@ -61,7 +61,7 @@ export function Report({ data, me, onDone }: { data: ShiftData; me: StaffMember;
           <div className="pflags"><b>FLAGS</b><ul>{flags.map((f, i) => <li key={i} className={f.level === 'bad' ? 'fbad' : f.level === 'ok' ? 'fok' : ''}>{f.text}</li>)}</ul></div>
         </div>
         <button className="blk primary" disabled={busy || !s.lockedAt} onClick={share}>{busy ? 'Making files…' : s.sentAt ? 'Send again' : 'Send to WhatsApp'}</button>
-        <button className="blk ghost" onClick={onDone}>Done · sign out</button>
+        <button className="blk ghost" onClick={onDone}>{me.role === 'employee' ? 'Done · sign out' : 'Done'}</button>
       </div>
     </div>
   )
