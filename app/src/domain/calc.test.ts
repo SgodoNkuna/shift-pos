@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { itemLines, shiftTotals, changeDue, shiftFlags, canLock } from './calc'
+import { itemLines, shiftTotals, changeDue, shiftFlags, canLock, profit } from './calc'
 import { sheet28Nov, sheet28NovMoney, prototypeNight } from './fixtures'
 
 const line = (d: ReturnType<typeof prototypeNight>, id: string) => itemLines(d).find(l => l.productId === id)!
@@ -119,5 +119,35 @@ describe('shiftFlags', () => {
   test('void is listed', () => {
     const d = prototypeNight(); d.sales[0].void = { by: 'a', reason: 'Wrong item', at: 'x' }
     expect(shiftFlags(d).map(x => x.code)).toContain('void')
+  })
+})
+
+describe('opening corrections', () => {
+  test('a corrected opening count is flagged with old and new numbers and who changed it', () => {
+    const d = prototypeNight()
+    d.shift.opening.supercheese = 24
+    d.shift.openingChanges = { supercheese: { from: 25, to: 24, by: 'a' } }
+    const f = shiftFlags(d, { a: 'Wisani Nkuna' }).find(x => x.code === 'opening_changed')!
+    expect(f.level).toBe('warn')
+    expect(f.text).toBe('Opening count changed at clock in: Super Cheese 25 → 24 (by Wisani Nkuna)')
+    expect(itemLines(d).find(l => l.productId === 'supercheese')!.expected).toBe(23)
+  })
+  test('no corrections, no flag', () => {
+    expect(shiftFlags(prototypeNight()).some(x => x.code === 'opening_changed')).toBe(false)
+  })
+})
+
+describe('profit (boss only)', () => {
+  const costs = { outdoor: 900, pinkink: 5500, kings: 14000, supercheese: 1400 }
+  test('per item and in total, using the price each sale was made at', () => {
+    const p = profit(prototypeNight(), costs)
+    expect(p.lines.find(l => l.productId === 'pinkink')).toMatchObject({ sold: 0.5, salesCents: 5000, costCents: 2750, profitCents: 2250 })
+    expect(p).toMatchObject({ salesCents: 37000, costCents: 19950, profitCents: 17050, missing: [] })
+  })
+  test('items with no cost price are listed, not guessed', () => {
+    const p = profit(prototypeNight(), { outdoor: 900 })
+    expect(p.missing.sort()).toEqual(['kings', 'pinkink', 'supercheese'])
+    expect(p.lines.find(l => l.productId === 'kings')!.profitCents).toBeNull()
+    expect(p.profitCents).toBe(4000 - 1800)
   })
 })

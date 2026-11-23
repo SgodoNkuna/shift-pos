@@ -43,6 +43,14 @@ describe('openShift', () => {
   })
 })
 
+describe('openShift with corrections', () => {
+  test('corrections replace the opening count and are recorded', async () => {
+    const s = await act().openShift({ by: 'a', floatCents: 0, opening: SHEET_OPENING, corrections: { supercheese: 24, outdoor: 59 } })
+    expect(s.opening.supercheese).toBe(24)
+    expect(s.openingChanges).toEqual({ supercheese: { from: 25, to: 24, by: 'a' } })
+  })
+})
+
 describe('recordSale', () => {
   test('writes one sale, one outbox row and uses the current price', async () => {
     const a = act()

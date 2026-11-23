@@ -60,15 +60,21 @@ export function createActions(db: ShiftDB, deps: ActionDeps = {}) {
     loadShiftData,
 
     /** Opening stock = last locked shift's counted close (or expected where not counted), else `opening`. */
-    async openShift(o: { by: string; floatCents: number; opening?: Record<string, number> }): Promise<Shift> {
+    async openShift(o: { by: string; floatCents: number; opening?: Record<string, number>; corrections?: Record<string, number> }): Promise<Shift> {
       const prev = await lastLockedShift()
       let opening = o.opening ?? {}
       if (prev) {
         opening = {}
         for (const l of itemLines(await loadShiftData(prev.id))) opening[l.productId] = l.counted ?? l.expected
       }
+      const openingChanges: NonNullable<Shift['openingChanges']> = {}
+      for (const [id, to] of Object.entries(o.corrections ?? {})) {
+        const from = opening[id] ?? 0
+        if (roundQty(to) !== roundQty(from)) { openingChanges[id] = { from, to: roundQty(to), by: o.by }; opening = { ...opening, [id]: roundQty(to) } }
+      }
       const { kind, date } = shiftFor(now())
-      const s: Shift = { id: uuid(), kind, date, openedBy: o.by, openedAt: iso(), opening, floatCents: o.floatCents }
+      const s: Shift = { id: uuid(), kind, date, openedBy: o.by, openedAt: iso(), opening, floatCents: o.floatCents,
+        ...(Object.keys(openingChanges).length ? { openingChanges } : {}) }
       return save('shifts', s, o.by, 'open_shift')
     },
 

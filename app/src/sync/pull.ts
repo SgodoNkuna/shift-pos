@@ -11,11 +11,12 @@ export async function pull(sb: SupabaseClient, meId: string): Promise<void> {
   const waiting = new Set((await db.outbox.toArray()).map(e => e.id))
   const keep = <T extends { id: string }>(rows: T[]) => rows.filter(r => !waiting.has(r.id))
 
-  const [staff, products, settings, shifts] = await Promise.all([
+  const [staff, products, settings, shifts, costs] = await Promise.all([
     sb.from('staff').select('id, name, role, phone, active'),
     sb.from('products').select('*'),
     sb.from('settings').select('key, value'),
     sb.from('shifts').select('*').order('opened_at', { ascending: false }).limit(12),
+    sb.from('product_costs').select('product_id, cents'), // empty unless this is the boss
   ])
   for (const r of [staff, products, settings, shifts]) if (r.error) throw r.error
 
@@ -46,6 +47,10 @@ export async function pull(sb: SupabaseClient, meId: string): Promise<void> {
     if (settingMap.first_opening) await setMeta('firstOpening', settingMap.first_opening)
     if (settingMap.float_cents != null) await setMeta('floatCents', Number(settingMap.float_cents))
     if (settingMap.stock_out_reasons) await setMeta('stockOutReasons', settingMap.stock_out_reasons)
+    if (settingMap.escalate_after_min != null) await setMeta('escalateMin', Number(settingMap.escalate_after_min))
+    if (settingMap.remind_sender_after_min != null) await setMeta('remindMin', Number(settingMap.remind_sender_after_min))
+    if (settingMap.alert_leads_after_min != null) await setMeta('alertMin', Number(settingMap.alert_leads_after_min))
+    if (!costs.error && costs.data?.length) await setMeta('costs', Object.fromEntries((costs.data as Row[]).map(c => [c.product_id, c.cents])))
     await setMeta('lastPull', new Date().toISOString())
   })
 }

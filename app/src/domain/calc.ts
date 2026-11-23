@@ -29,7 +29,7 @@ export interface ShiftTotals {
   categorySalesCents: Record<string, number>
 }
 
-export type FlagCode = 'stock_diff' | 'cash_diff' | 'card_diff' | 'cash_ok' | 'card_ok' | 'stock_out'
+export type FlagCode = 'opening_changed' | 'stock_diff' | 'cash_diff' | 'card_diff' | 'cash_ok' | 'card_ok' | 'stock_out'
   | 'low_stock' | 'category_mismatch' | 'category_ok' | 'void'
 export interface Flag { level: 'bad' | 'warn' | 'ok' | 'info'; code: FlagCode; text: string; productId?: string }
 
@@ -98,6 +98,11 @@ export function shiftFlags(d: ShiftData, names: Record<string, string> = {}): Fl
   const prod = (id: string) => d.products.find(x => x.id === id)!
   const lines = itemLines(d)
 
+  const changes = Object.entries(d.shift.openingChanges ?? {})
+  if (changes.length) flags.push({ level: 'warn', code: 'opening_changed',
+    text: `Opening count changed at clock in: ${changes.map(([id, c]) => `${name(id)} ${formatQty(prod(id), c.from)} → ${formatQty(prod(id), c.to)}`).join(', ')}`
+      + ` (by ${[...new Set(changes.map(([, c]) => who(c.by)))].join(', ')})` })
+
   for (const l of lines) if (l.diff) {
     const p = prod(l.productId)
     flags.push({ level: 'bad', code: 'stock_diff', productId: p.id,
@@ -140,4 +145,23 @@ export function canLock(d: ShiftData): { ok: boolean; reasons: LockReason[] } {
   if (!d.shift.pinOutBy) reasons.push('missing_pin_out')
   if (!d.shift.pinInBy) reasons.push('missing_pin_in')
   return { ok: reasons.length === 0, reasons }
+}
+
+export interface ProfitLine { productId: string; sold: number; salesCents: number; costCents: number | null; profitCents: number | null }
+
+/** Boss only. Profit on what was sold; items with no cost price are listed in `missing` and left out of the totals. */
+export function profit(d: ShiftData, costs: Record<string, number>) {
+  const lines: ProfitLine[] = itemLines(d).filter(l => l.sold > 0).map(l => {
+    const c = costs[l.productId]
+    const costCents = c == null ? null : Math.round(l.sold * c)
+    return { productId: l.productId, sold: l.sold, salesCents: l.salesCents, costCents, profitCents: costCents == null ? null : l.salesCents - costCents }
+  })
+  const known = lines.filter(l => l.costCents != null)
+  return {
+    lines,
+    salesCents: sumBy(known, l => l.salesCents),
+    costCents: sumBy(known, l => l.costCents!),
+    profitCents: sumBy(known, l => l.profitCents!),
+    missing: lines.filter(l => l.costCents == null).map(l => l.productId),
+  }
 }

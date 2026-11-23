@@ -3,7 +3,7 @@ import type { OutboxEntry, SyncTable } from '../data/db'
 type Row = Record<string, unknown>
 /** [phone field, server column] per table. */
 const FIELDS: Record<SyncTable, [string, string][]> = {
-  shifts: [['id', 'id'], ['kind', 'kind'], ['date', 'date'], ['openedBy', 'opened_by'], ['openedAt', 'opened_at'], ['opening', 'opening'],
+  shifts: [['id', 'id'], ['kind', 'kind'], ['date', 'date'], ['openedBy', 'opened_by'], ['openedAt', 'opened_at'], ['opening', 'opening'], ['openingChanges', 'opening_changes'],
     ['floatCents', 'float_cents'], ['counts', 'counts'], ['cashCountedCents', 'cash_counted_cents'], ['cardSlipCents', 'card_slip_cents'],
     ['pinOutBy', 'pin_out_by'], ['pinInBy', 'pin_in_by'], ['lockedAt', 'locked_at'], ['sentAt', 'sent_at']],
   sales: [['id', 'id'], ['shiftId', 'shift_id'], ['at', 'at'], ['by', 'by_staff'], ['lines', 'lines'], ['payments', 'payments'], ['void', 'void']],

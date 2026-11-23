@@ -1,7 +1,9 @@
 import { useState } from 'react'
 import { actions } from '../../app/store'
 import type { StaffMember } from '../../data/db'
-import { displayName, itemLines, shiftFlags, shiftTotals } from '../../domain/calc'
+import { displayName, itemLines, profit, shiftFlags, shiftTotals } from '../../domain/calc'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { getMeta } from '../../app/store'
 import { formatQty, formatRand } from '../../domain/num'
 import type { ShiftData } from '../../domain/types'
 import { shareFiles } from '../../report/share'
@@ -30,6 +32,9 @@ export function Report({ data, me, onDone }: { data: ShiftData; me: StaffMember;
     } catch { toast('Could not share. Try again.') } finally { setBusy(false) }
   }
   const cats = [...new Set(data.products.map(p => p.categoryId))]
+  const costs: Record<string, number> = useLiveQuery(() => getMeta<Record<string, number>>('costs', {}), [], {})
+  const pr = me.role === 'boss' ? profit(data, costs) : null
+  const pname = (id: string) => { const p = data.products.find(x => x.id === id); return p ? displayName(p, data.products) : id }
   return (
     <div className="main enter">
       <Header title="Shift report" sub={s.lockedAt ? 'Locked. Nobody can change these numbers now.' : 'Not locked yet'} />
@@ -60,6 +65,15 @@ export function Report({ data, me, onDone }: { data: ShiftData; me: StaffMember;
           </div>
           <div className="pflags"><b>FLAGS</b><ul>{flags.map((f, i) => <li key={i} className={f.level === 'bad' ? 'fbad' : f.level === 'ok' ? 'fok' : ''}>{f.text}</li>)}</ul></div>
         </div>
+        {pr && <div className="block">
+          <div className="lbl">Profit · only you see this · not sent to WhatsApp</div>
+          {pr.lines.length ? <table className="ctable"><thead><tr><th>Item</th><th className="r">Sales</th><th className="r">Cost</th><th className="r">Profit</th></tr></thead>
+            <tbody>{pr.lines.map(l => <tr key={l.productId}><td>{pname(l.productId)}</td><td className="num">{formatRand(l.salesCents)}</td>
+              <td className="num">{l.costCents == null ? '—' : formatRand(l.costCents)}</td><td className="num ok">{l.profitCents == null ? '—' : formatRand(l.profitCents)}</td></tr>)}
+              <tr><td><b>Total</b></td><td className="num"><b>{formatRand(pr.salesCents)}</b></td><td className="num">{formatRand(pr.costCents)}</td><td className="num ok"><b>{formatRand(pr.profitCents)}</b></td></tr>
+            </tbody></table> : <span className="muted small">Nothing sold yet.</span>}
+          {pr.missing.length > 0 && <span className="warn small">No cost price yet for {pr.missing.map(pname).join(', ')}. Add it in Menu → Products &amp; prices.</span>}
+        </div>}
         <button className="blk primary" disabled={busy || !s.lockedAt} onClick={share}>{busy ? 'Making files…' : s.sentAt ? 'Send again' : 'Send to WhatsApp'}</button>
         <button className="blk ghost" onClick={onDone}>{me.role === 'employee' ? 'Done · sign out' : 'Done'}</button>
       </div>

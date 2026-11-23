@@ -54,6 +54,8 @@ export interface Shift {
   openedBy: string
   openedAt: string
   opening: Record<string, number>
+  /** Opening counts changed at clock in: what the last shift handed over, what was really there, and who changed it. */
+  openingChanges?: Record<string, { from: number; to: number; by: string }>
   floatCents: number
   counts?: Record<string, number>
   cashCountedCents?: number

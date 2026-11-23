@@ -12,6 +12,8 @@ import { Expense } from './screens/Expense'
 import { ClockOut } from './screens/ClockOut'
 import { Report } from './screens/Report'
 import { People } from './screens/People'
+import { Settings } from './screens/Settings'
+import { Products } from './screens/Products'
 import { Join, Welcome } from './screens/Join'
 import { Overview } from './screens/Overview'
 import { deviceStaffId, supabase } from '../sync/client'
@@ -50,7 +52,7 @@ function Shell() {
   const [me, setMe] = useState<StaffMember | null>(null)
   const [tab, setTab] = useState<Tab>('sell')
   const [reportId, setReportId] = useState<string | null>(null)
-  const [menu, setMenu] = useState<null | 'menu' | 'people'>(null)
+  const [menu, setMenu] = useState<null | 'menu' | 'people' | 'settings' | 'products'>(null)
   const open = useLiveQuery(() => openShiftNow(), [], undefined)
   const data = useShiftData(reportId ?? open?.id)
   const pending = data?.moves.filter(m => m.kind === 'out' && m.status === 'pending').length ?? 0
@@ -101,10 +103,14 @@ function Shell() {
       {menu === 'menu' && me && <Sheet title="Menu" onClose={() => setMenu(null)}>
         {lead && <button className="blk" onClick={() => { setLeadTill(false); setReportId(null); setMenu(null) }}>Overview</button>}
         {lead && <button className="blk" onClick={() => setMenu('people')}>People</button>}
+        {lead && <button className="blk" onClick={() => setMenu('products')}>Products &amp; prices</button>}
+        {me.role === 'boss' && <button className="blk" onClick={() => setMenu('settings')}>Settings</button>}
         {deviceId && <AlertsCard me={me} />}
         <button className="blk" onClick={signOut}>Sign out</button>
       </Sheet>}
       {menu === 'people' && me && <People me={me} onClose={() => setMenu(null)} />}
+      {menu === 'settings' && me?.role === 'boss' && <Settings onClose={() => setMenu(null)} />}
+      {menu === 'products' && me && me.role !== 'employee' && <Products me={me} onClose={() => setMenu(null)} />}
     </div>)
 }
 

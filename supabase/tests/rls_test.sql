@@ -68,7 +68,11 @@ begin
     (38,'manager can unlock a PIN', 'm', format($q$select public.reset_pin_lock(%L)$q$, se2), 'ok'),
     (39,'unlocked PIN works again', 'e', format($q$select (public.check_pin(%L,'3333')='ok')::int$q$, se2), 'n=1'),
     (40,'nobody can read PIN hashes directly', 'b', 'select count(*) from private.staff_pins', 'deny'),
-    (41,'employee still cannot approve directly', 'e', format($q$update moves set status='approved' where id=%L$q$, mv3), 'deny')
+    (41,'employee still cannot approve directly', 'e', format($q$update moves set status='approved' where id=%L$q$, mv3), 'deny'),
+    (42,'manager can change a product price', 'm', $q$update products set price_cents=3500 where id='t_supercheese'$q$, 'ok'),
+    (43,'manager cannot set cost prices', 'm', $q$insert into product_costs (product_id,cents) values ('t_supercheese',1500) on conflict (product_id) do update set cents=excluded.cents$q$, 'deny'),
+    (44,'boss can set cost prices', 'b', $q$insert into product_costs (product_id,cents) values ('t_supercheese',1500) on conflict (product_id) do update set cents=excluded.cents$q$, 'ok'),
+    (45,'employee cannot change settings or float', 'e', $q$update settings set value='20000' where key='float_cents'$q$, 'deny')
   ) as t(no,label,who,sql,expect) order by no
   loop
     execute 'reset role';

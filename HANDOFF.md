@@ -23,10 +23,10 @@ Code lives at https://github.com/SgodoNkuna/shift-pos (private). Moved from a cl
 | 9. Report | Done: paper-style screen, PDF + XLSX (loaded only when sending), WhatsApp share text |
 
 End-to-end: `npm run build && npx vite preview --port 4173` then `npm run e2e -- http://localhost:4173 <shots dir>` plays a whole shift (17 steps).
-Not yet: correcting an opening count at clock-in, boss Settings screen (float, reasons), product/price editing screens.
+
 | 10. Supabase | Done. Schema, roles, RLS, server-checked PINs (41/41 role tests, `supabase/tests/rls_test.sql`). Sign-ups closed. Products + first opening seeded. `redeem-invite` edge function deployed. Sync engine (outbox send rules, pull, realtime). Live two-phone test: `app/e2e/live.e2e.cjs` (creates test staff via SQL first; clean up after). |
 | 11. Alerts | Done. `claim_due_notifications` (12/12 timing tests, `supabase/tests/alerts_test.sql`), trigger on stock out + pg_cron every minute → `notify` edge function (web push, VAPID; private key only in function secrets). Phone: `public/sw.js`, manifest + icons, Turn-on-alerts card, test alert. Live-tested with stand-in endpoints (headless browsers cannot hold real push subscriptions): `app/e2e/alerts.e2e.cjs`. |
-| 12. Boss screens | Overview done (open shift, approvals, activity, unsent report). Settings and product/price editing not started |
+| 12. Boss screens | Done: overview; Settings (boss: float, stock-out reasons, alert minutes, multi-seller shown locked); Products & prices (leads; price history in `prices`; boss cost prices in `product_costs`); boss-only profit on the report screen (never in the shared files). Opening count corrections at clock in, flagged on the report. Browser test: `app/e2e/boss.e2e.cjs` |
 | 13. Deploy | **Live at https://shift-pos.pages.dev.** GitHub Action `.github/workflows/deploy.yml` tests, builds and deploys on every push to main (repo secret `CLOUDFLARE_API_TOKEN`). Don't deploy with wrangler from the cloud session: the proxy rewrites the upload token. |
 
 Run SQL against the project with `python3 scripts/sbsql.py <file.sql>` (cloud session: the token is injected by the network proxy). Keep Supabase's GitHub "Deploy to production" **off**; migrations are applied with `--migrate <name>` and the file names match the versions Supabase recorded.
