@@ -1,5 +1,6 @@
 import { canLock, itemLines, type LockReason } from '../domain/calc'
 import { roundQty, shiftFor } from '../domain/num'
+import { sortProducts } from '../domain/order'
 import type { Expense, Payment, Sale, Shift, ShiftData, StockMove } from '../domain/types'
 import type { ShiftDB, SyncTable } from './db'
 
@@ -42,7 +43,7 @@ export function createActions(db: ShiftDB, deps: ActionDeps = {}) {
 
   async function loadShiftData(shiftId: string): Promise<ShiftData> {
     const [shift, products, sales, moves, expenses] = await Promise.all([
-      getShift(shiftId), db.products.toArray(),
+      getShift(shiftId), db.products.toArray().then(sortProducts),
       db.sales.where('shiftId').equals(shiftId).toArray(),
       db.moves.where('shiftId').equals(shiftId).toArray(),
       db.expenses.where('shiftId').equals(shiftId).toArray(),

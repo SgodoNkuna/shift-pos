@@ -11,6 +11,8 @@ export interface Product {
   /** Current selling price in cents */
   priceCents: number
   active: boolean
+  /** Position on the till and in reports (paper-sheet order). */
+  sort?: number
 }
 
 export interface SaleLine { productId: string; qty: number; unitCents: number }

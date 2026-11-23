@@ -90,8 +90,10 @@ export function shiftTotals(d: ShiftData): ShiftTotals {
 
 export const changeDue = (totalCents: number, tenderedCents: number): number => tenderedCents - totalCents
 
-export function shiftFlags(d: ShiftData): Flag[] {
+/** `names` maps staff ids to names so flags read "approved by Rori", not an id. */
+export function shiftFlags(d: ShiftData, names: Record<string, string> = {}): Flag[] {
   const flags: Flag[] = []
+  const who = (id?: string) => (id ? names[id] ?? id : '')
   const name = (id: string) => { const p = d.products.find(x => x.id === id)!; return displayName(p, d.products) }
   const prod = (id: string) => d.products.find(x => x.id === id)!
   const lines = itemLines(d)
@@ -113,11 +115,11 @@ export function shiftFlags(d: ShiftData): Flag[] {
   for (const m of d.moves.filter(m => m.kind === 'out')) {
     const p = prod(m.productId)
     flags.push({ level: m.status === 'rejected' ? 'bad' : m.status === 'pending' ? 'warn' : 'info', code: 'stock_out', productId: p.id,
-      text: `Stock out ${formatQty(p, m.qty)} ${name(p.id)} · ${m.reason ?? 'No reason'} · ${m.status}${m.decidedBy ? ` by ${m.decidedBy}` : ''}` })
+      text: `Stock out ${formatQty(p, m.qty)} ${name(p.id)} · ${m.reason ?? 'No reason'} · ${m.status}${m.decidedBy ? ` by ${who(m.decidedBy)}` : ''}` })
   }
 
   for (const s of d.sales.filter(s => s.void)) flags.push({ level: 'warn', code: 'void',
-    text: `Voided sale ${formatRand(Math.round(sumBy(s.lines, l => l.qty * l.unitCents)))} · ${s.void!.reason} · by ${s.void!.by}` })
+    text: `Voided sale ${formatRand(Math.round(sumBy(s.lines, l => l.qty * l.unitCents)))} · ${s.void!.reason} · by ${who(s.void!.by)}` })
 
   const low = lines.filter(l => (l.counted ?? l.expected) <= prod(l.productId).lowAt)
   if (low.length) flags.push({ level: 'warn', code: 'low_stock',

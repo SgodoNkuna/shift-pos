@@ -17,7 +17,7 @@ export const SHEET_PRODUCTS: Product[] = [
   P('limitless', 'Limitless', 'rolling', 30, 'ea'), P('rizla30', 'Rizla', 'rolling', 30, 'ea'),
   P('rizla20', 'Rizla', 'rolling', 20, 'ea'), P('bejo', 'Bejo', 'rolling', 30, 'ea'),
   P('raw', 'Raw', 'rolling', 40, 'ea'), P('honeyp', 'Honey P', 'rolling', 20, 'ea'),
-]
+].map((p, i) => ({ ...p, sort: i + 1 }))
 
 export const SHEET_OPENING: Record<string, number> = {
   outdoor: 59, supercheese: 25, castro: 29, exodus: 26, pinkink: 1, eucalypto: 1, cadillac: 3, icecool: 3,

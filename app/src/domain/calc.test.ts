@@ -106,7 +106,9 @@ describe('shiftFlags', () => {
     expect(s.level).toBe('bad'); expect(s.productId).toBe('supercheese'); expect(s.text).toContain('Super Cheese')
   })
   test('cash and card match', () => { expect(codes).toContain('cash_ok'); expect(codes).toContain('card_ok') })
-  test('stock out listed', () => { expect(codes).toContain('stock_out') })
+  test('stock out listed with the approver\'s name', () => {
+    expect(shiftFlags(prototypeNight(), { boss: 'Ta Vuyo' }).find(x => x.code === 'stock_out')!.text).toContain('approved by Ta Vuyo')
+  })
   test('low stock lists Pink Ink', () => { expect(f.find(x => x.code === 'low_stock')!.text).toContain('Pink Ink') })
   test('category totals ok', () => { expect(codes).toContain('category_ok') })
   test('cash short is flagged bad', () => {
