@@ -1,0 +1,71 @@
+export type Unit = 'ea' | 'g'
+export type Role = 'employee' | 'manager' | 'boss'
+
+export interface Product {
+  id: string
+  name: string
+  categoryId: string
+  unit: Unit
+  step: number
+  lowAt: number
+  /** Current selling price in cents */
+  priceCents: number
+  active: boolean
+}
+
+export interface SaleLine { productId: string; qty: number; unitCents: number }
+export interface Payment { method: 'cash' | 'card'; cents: number }
+
+export interface Sale {
+  id: string
+  shiftId: string
+  at: string
+  by: string
+  lines: SaleLine[]
+  payments: Payment[]
+  void?: { by: string; reason: string; at: string }
+}
+
+export type MoveStatus = 'done' | 'pending' | 'approved' | 'rejected'
+
+export interface StockMove {
+  id: string
+  shiftId: string
+  productId: string
+  qty: number
+  kind: 'in' | 'out'
+  status: MoveStatus
+  reason?: string
+  by: string
+  at: string
+  decidedBy?: string
+  decidedAt?: string
+  escalatedAt?: string
+}
+
+export interface Expense { id: string; shiftId: string; cents: number; note: string; by: string; at: string }
+
+export interface Shift {
+  id: string
+  kind: 'day' | 'night'
+  date: string
+  openedBy: string
+  openedAt: string
+  opening: Record<string, number>
+  floatCents: number
+  counts?: Record<string, number>
+  cashCountedCents?: number
+  cardSlipCents?: number
+  pinOutBy?: string
+  pinInBy?: string
+  lockedAt?: string
+  sentAt?: string
+}
+
+export interface ShiftData {
+  shift: Shift
+  products: Product[]
+  sales: Sale[]
+  moves: StockMove[]
+  expenses: Expense[]
+}
