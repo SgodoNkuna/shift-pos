@@ -67,5 +67,6 @@ export async function startDemo(): Promise<void> {
 /** Wipes everything on this phone (demo or test data) and starts again at the welcome screen. */
 export async function resetPhone(): Promise<void> {
   await db.delete()
-  location.replace('/')
+  history.replaceState(null, '', location.pathname)
+  location.reload()
 }

@@ -21,6 +21,7 @@ import { deviceStaffId, supabase } from '../sync/client'
 import { onSync, startSync, syncState, type SyncState } from '../sync/engine'
 
 import { AlertsCard } from './Alerts'
+import { DEMO_ONLY, SHOP } from '../app/brand'
 
 type Tab = 'sell' | 'in' | 'out' | 'exp' | 'close'
 const TABS: [Tab, string][] = [['sell', 'Sell'], ['in', 'In'], ['out', 'Out'], ['exp', 'Expense'], ['close', 'Close']]
@@ -75,10 +76,10 @@ function Shell() {
 
   let body
   if (joinToken && !me) body = <Join token={joinToken} onDone={m => { setDeviceId(m.id); setMe(m) }} />
-  else if (staffCount === 0) body = supabase ? <Welcome onDemo={() => void startDemo()} /> : <Setup onDone={setMe} />
+  else if (staffCount === 0) body = supabase || DEMO_ONLY ? <Welcome onDemo={() => void startDemo()} /> : <Setup onDone={setMe} />
   else if (!me) body = (
     <div className="main enter"><div className="pad stack pinwrap">
-      <div className="mark"><span>CANNABIS LOUNGE</span>HASH</div>
+      <div className="mark"><span>{SHOP.markTop}</span>{SHOP.markMain}</div>
       <PinPad people={deviceId ? staff.filter(s => s.id === deviceId) : staff} onOk={m => setMe(m)} />
       {demo && <div className="note small" style={{ textAlign: 'left', width: '100%' }}><b>Demo logins</b><br />
         {DEMO_LOGINS.map(d => <span key={d.name}>{d.name} ({d.role}): PIN <b className="num">{d.pin}</b><br /></span>)}</div>}
@@ -115,7 +116,7 @@ function Shell() {
         {lead && <button className="blk" onClick={() => setMenu('products')}>Products &amp; prices</button>}
         {me.role === 'boss' && <button className="blk" onClick={() => setMenu('settings')}>Settings</button>}
         <AlertsCard me={me} />
-        {!deviceId && supabase && <button className="blk badb" onClick={() => void resetPhone()}>{demo ? 'Leave the demo' : 'Leave test mode'} (wipes this phone)</button>}
+        {!deviceId && (supabase || DEMO_ONLY) && <button className="blk badb" onClick={() => void resetPhone()}>{demo ? 'Leave the demo' : 'Leave test mode'} (wipes this phone)</button>}
         <button className="blk" onClick={signOut}>Sign out</button>
       </Sheet>}
       {menu === 'people' && me && <People me={me} onClose={() => setMenu(null)} />}

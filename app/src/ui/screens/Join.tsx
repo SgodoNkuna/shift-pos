@@ -4,6 +4,7 @@ import { hashPin } from '../../auth/pin'
 import type { StaffMember } from '../../data/db'
 import { supabase, SUPABASE_KEY, SUPABASE_URL } from '../../sync/client'
 import { syncNow } from '../../sync/engine'
+import { DEMO_ONLY, SHOP } from '../../app/brand'
 
 const hex = (n: number) => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('')
 
@@ -49,9 +50,9 @@ export function Join({ token, onDone }: { token: string; onDone: (m: StaffMember
 
   return (
     <div className="main enter"><div className="pad stack">
-      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>CANNABIS LOUNGE</span>HASH</div>
+      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>{SHOP.markTop}</span>{SHOP.markMain}</div>
       {step !== 'pin' ? <>
-        <div className="note">You were invited to the Hash Cannabis Lounge shift app. Tap below to set up this phone. It only works once.</div>
+        <div className="note">You were invited to the {SHOP.name} shift app. Tap below to set up this phone. It only works once.</div>
         <button className="blk primary" onClick={join} disabled={step === 'busy'}>{step === 'busy' ? 'Setting up…' : 'Set up this phone'}</button>
       </> : <>
         <div className="note">Welcome, <b>{who?.name}</b> ({who?.role}). Choose a 4-number PIN. You type it every time you open the app.</div>
@@ -69,9 +70,10 @@ export function Join({ token, onDone }: { token: string; onDone: (m: StaffMember
 export function Welcome({ onDemo }: { onDemo: () => void }) {
   return (
     <div className="main enter"><div className="pad stack">
-      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>CANNABIS LOUNGE</span>HASH</div>
-      <div className="note">Open the <b>invite link</b> the manager sent you on WhatsApp. It sets up this phone for you.</div>
-      <p className="muted small">No link? Ask the manager or the boss to send you one from the app (Menu → People).</p>
+      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>{SHOP.markTop}</span>{SHOP.markMain}</div>
+      {DEMO_ONLY ? <div className="note">This is a demo of the shift app: a till, stock count and shift report. Everything stays in this page.</div> : <>
+        <div className="note">Open the <b>invite link</b> the manager sent you on WhatsApp. It sets up this phone for you.</div>
+        <p className="muted small">No link? Ask the manager or the boss to send you one from the app (Menu → People).</p></>}
       <div className="block">
         <b>Just looking?</b>
         <span className="muted small">The demo has the shop's products and four people to sign in as. Nothing you do reaches the real shop.</span>

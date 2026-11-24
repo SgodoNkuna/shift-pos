@@ -5,6 +5,7 @@ import type { Role } from '../../domain/types'
 import { supabase, deviceStaffId } from '../../sync/client'
 import { syncNow } from '../../sync/engine'
 import { Sheet, useStaff, useToast } from '../kit'
+import { SHOP } from '../../app/brand'
 
 const token = () => [...crypto.getRandomValues(new Uint8Array(24))].map(b => b.toString(16).padStart(2, '0')).join('')
 const digits = (phone?: string) => (phone ?? '').replace(/\D/g, '').replace(/^0/, '27')
@@ -15,7 +16,7 @@ async function invite(me: StaffMember, m: StaffMember): Promise<string> {
   const { error } = await supabase!.from('invites').insert({ token: t, staff_id: m.id, created_by: me.id })
   if (error) throw error
   const link = `${location.origin}/?join=${t}`
-  const text = `Hi ${m.name}, this is your invite to the Hash Cannabis Lounge shift app. Open it on your phone (works once, for 7 days): ${link}`
+  const text = `Hi ${m.name}, this is your invite to the ${SHOP.name} shift app. Open it on your phone (works once, for 7 days): ${link}`
   const wa = digits(m.phone) ? `https://wa.me/${digits(m.phone)}?text=${encodeURIComponent(text)}` : `https://wa.me/?text=${encodeURIComponent(text)}`
   window.open(wa, '_blank', 'noopener')
   return link

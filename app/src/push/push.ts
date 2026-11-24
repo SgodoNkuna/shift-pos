@@ -1,4 +1,5 @@
 import { supabase, SUPABASE_URL, SUPABASE_KEY, deviceStaffId } from '../sync/client'
+import { DEMO_ONLY } from '../app/brand'
 
 const VAPID = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined
 
@@ -10,11 +11,11 @@ const supported = () => 'serviceWorker' in navigator && 'PushManager' in window 
 
 /** Starts the background helper (alerts + opening without signal). Only in the built app. */
 export function registerServiceWorker(): void {
-  if ('serviceWorker' in navigator && import.meta.env.PROD) void navigator.serviceWorker.register('/sw.js')
+  if ('serviceWorker' in navigator && import.meta.env.PROD && !DEMO_ONLY) navigator.serviceWorker.register('/sw.js').catch(() => {})
 }
 
 export async function alertState(): Promise<AlertState> {
-  if (supabase && !(await deviceStaffId())) return 'needs-account'
+  if (DEMO_ONLY || (supabase && !(await deviceStaffId()))) return 'needs-account'
   if (isIos() && !isInstalled()) return 'install-first'
   if (!supported()) return 'unsupported'
   if (Notification.permission === 'denied') return 'blocked'
