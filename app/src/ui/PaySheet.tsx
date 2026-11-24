@@ -7,9 +7,9 @@ import { Sheet } from './kit'
 
 const NOTES = [1000, 2000, 5000, 10000, 20000]
 
-export function PaySheet({ total, onPay, onClose }: { total: number; onPay: (p: Payment[]) => Promise<void>; onClose: () => void }) {
-  const [mode, setMode] = useState<PayMode>('cash')
-  const [given, setGiven] = useState<number | null>(total) // exact is pre-selected: tile → Pay → Record = 3 taps
+export function PaySheet({ total, mode0 = 'cash', onPay, onClose }: { total: number; mode0?: PayMode; onPay: (p: Payment[]) => Promise<void>; onClose: () => void }) {
+  const [mode, setMode] = useState<PayMode>(mode0)
+  const [given, setGiven] = useState<number | null>(mode0 === 'cash' ? total : null) // exact is pre-selected: tile → Cash → Record = 3 taps
   const [card, setCard] = useState<number | null>(null)
   const [busy, setBusy] = useState(false)
   const cashChips = [total, ...NOTES.filter(n => n > total)].slice(0, 5)

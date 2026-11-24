@@ -39,7 +39,7 @@ describe('ClockOut', () => {
     expect(text).toContain('Count every item (23 left)')
     expect(text).toContain('Count the cash in the drawer')
     expect(text).toContain('The next person needs to enter their PIN')
-    const lock = screen.getAllByRole('button', { name: 'Lock shift' }).at(-1) as HTMLButtonElement
+    const lock = screen.getAllByRole('button', { name: 'Lock & send report' }).at(-1) as HTMLButtonElement
     expect(lock.disabled).toBe(true)
   })
   test('the pending stock out is shown with its status', async () => {

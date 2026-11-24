@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { actions } from '../../app/store'
 import type { StaffMember } from '../../data/db'
 import { displayName, itemLines, profit, shiftFlags, shiftTotals } from '../../domain/calc'
@@ -6,12 +6,12 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { getMeta } from '../../app/store'
 import { formatQty, formatRand } from '../../domain/num'
 import type { ShiftData } from '../../domain/types'
-import { shareFiles } from '../../report/share'
+import { canShareFiles, shareFiles } from '../../report/share'
 import { shareText } from '../../report/summary'
 import { reportFileName } from '../../report/names'
 import { catLabel, Header, useStaff, useToast } from '../kit'
 
-export function Report({ data, me, onDone }: { data: ShiftData; me: StaffMember; onDone: () => void }) {
+export function Report({ data, me, onDone, autoSend = false }: { data: ShiftData; me: StaffMember; onDone: () => void; autoSend?: boolean }) {
   const toast = useToast()
   const staff = useStaff()
   const [busy, setBusy] = useState(false)
@@ -32,6 +32,9 @@ export function Report({ data, me, onDone }: { data: ShiftData; me: StaffMember;
     } catch { toast('Could not share. Try again.') } finally { setBusy(false) }
   }
   const cats = [...new Set(data.products.map(p => p.categoryId))]
+  const tried = useRef(false)
+  // Lock & send: open WhatsApp sharing straight after locking, where the phone allows it.
+  useEffect(() => { if (autoSend && !tried.current && s.lockedAt && !s.sentAt && canShareFiles() && staff.length) { tried.current = true; void share() } })
   const costs: Record<string, number> = useLiveQuery(() => getMeta<Record<string, number>>('costs', {}), [], {})
   const pr = me.role === 'boss' ? profit(data, costs) : null
   const pname = (id: string) => { const p = data.products.find(x => x.id === id); return p ? displayName(p, data.products) : id }

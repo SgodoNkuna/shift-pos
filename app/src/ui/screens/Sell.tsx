@@ -4,7 +4,7 @@ import type { StaffMember } from '../../data/db'
 import { itemLines } from '../../domain/calc'
 import { formatQty, formatRand } from '../../domain/num'
 import type { ShiftData } from '../../domain/types'
-import { addToBasket, basketQty, basketTotal, removeFromBasket, type Basket } from '../basket'
+import { addToBasket, basketQty, basketTotal, removeFromBasket, type Basket, type PayMode } from '../basket'
 import { catLabel, useToast } from '../kit'
 import { PaySheet } from '../PaySheet'
 import { displayName } from '../../domain/calc'
@@ -15,7 +15,7 @@ export function Sell({ data, me }: { data: ShiftData; me: StaffMember }) {
   const cats = [...new Set(products.map(p => p.categoryId))]
   const [cat, setCat] = useState(cats[0] ?? 'main')
   const [basket, setBasket] = useState<Basket>([])
-  const [paying, setPaying] = useState(false)
+  const [paying, setPaying] = useState<null | PayMode>(null)
   const expected = useMemo(() => Object.fromEntries(itemLines(data).map(l => [l.productId, l.expected])), [data])
   const total = basketTotal(basket, products)
   const last = [...data.sales].filter(s => !s.void && s.by === me.id).sort((a, b) => b.at.localeCompare(a.at))[0]
@@ -54,11 +54,15 @@ export function Sell({ data, me }: { data: ShiftData; me: StaffMember }) {
           {last && <> · Last sale {formatRand(lastTotal)} <button className="linkbtn" onClick={async () => { await actions.voidSale(last.id, me.id, 'Undone at till'); toast('Last sale undone') }}>Undo</button></>}
         </div>}
         <div className="btot"><span className="lbl">Total</span><b className="num">{formatRand(total)}</b></div>
-        <button className="blk primary" disabled={!basket.length} onClick={() => setPaying(true)}>Pay</button>
+        <div className="two">
+          <button className="blk primary" disabled={!basket.length} onClick={() => setPaying('cash')}>Cash</button>
+          <button className="blk primary" disabled={!basket.length} onClick={() => setPaying('card')}>Card</button>
+        </div>
+        {basket.length > 0 && <button className="linkbtn" style={{ alignSelf: 'center' }} onClick={() => setPaying('split')}>Part cash, part card</button>}
       </div>
-      {paying && <PaySheet total={total} onClose={() => setPaying(false)} onPay={async payments => {
+      {paying && <PaySheet total={total} mode0={paying} onClose={() => setPaying(null)} onPay={async payments => {
         await actions.recordSale(data.shift.id, me.id, basket, payments)
-        setBasket([]); setPaying(false); toast('Sale recorded')
+        setBasket([]); setPaying(null); toast('Sale recorded')
       }} />}
     </div>
   )

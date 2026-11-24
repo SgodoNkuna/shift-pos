@@ -12,9 +12,9 @@ begin
   -- Real staff are in the table too; count only the test people.
   insert into products values ('t_martian','Martian F','main','g',0.5,1,15000,true,99) on conflict do nothing;
   insert into shifts (id,kind,date,opened_by,opened_at) values (s1,'night','2026-11-28',e,t0 - interval '2 hours');
-  insert into shifts (id,kind,date,opened_by,opened_at,locked_at,pin_out_by,pin_in_by,cash_counted_cents,card_slip_cents)
-    values (s2,'day','2026-11-28',e,t0 - interval '14 hours',t0 - interval '16 minutes',e,e,0,0),
-           (s3,'day','2026-11-27',e,t0 - interval '38 hours',t0 - interval '31 minutes',e,e,0,0);
+  insert into shifts (id,kind,date,opened_by,opened_at,locked_at,pin_out_by,pin_in_by,cash_counted_cents,card_slip_cents,counts)
+    values (s2,'day','2026-11-28',e,t0 - interval '14 hours',t0 - interval '16 minutes',e,e,0,0,'{"t_martian": 0.5}'),
+           (s3,'day','2026-11-27',e,t0 - interval '38 hours',t0 - interval '31 minutes',e,e,0,0,'{"t_martian": 3}');
   insert into shifts (id,kind,date,opened_by,opened_at,locked_at,sent_at,pin_out_by,pin_in_by,cash_counted_cents,card_slip_cents)
     values (s4,'day','2026-11-26',e,t0 - interval '60 hours',t0 - interval '40 minutes',t0 - interval '39 minutes',e,e,0,0);
   insert into moves (id,shift_id,product_id,qty,kind,status,reason,by_staff,at) values
@@ -44,6 +44,10 @@ begin
   select count(*) into n from r where body = '0.5 g Martian F (R75) · T Emp · Given to boss';
   if n >= 1 then passed := passed + 1; else failed := failed + 1; report := report || ' text=' || (select string_agg(body, ' | ') from r); end if;
 
+  select count(*) into n from r where title = 'Low stock' and tag = 'low-' || s2 and body = 'Day shift 28 Nov closed with: Martian F 0.5 g';
+  if n = 2 then passed := passed + 1; else failed := failed + 1; report := report || ' low-stock=' || n || ' ' || coalesce((select string_agg(body, ' | ') from r where title = 'Low stock'), ''); end if;
+  select count(*) into n from r where title = 'Low stock' and tag = 'low-' || s3;
+  if n = 0 then passed := passed + 1; else failed := failed + 1; report := report || ' low-stock-not-low=' || n; end if;
   select count(*) into n from public.claim_due_notifications(t0) where staff_id in (e, m, b);
   if n = 0 then passed := passed + 1; else failed := failed + 1; report := report || ' second-call=' || n; end if;
   select count(*) into n from public.claim_due_notifications(t0 + interval '5 minutes') where staff_id in (e, m, b) and title like 'Still waiting%';

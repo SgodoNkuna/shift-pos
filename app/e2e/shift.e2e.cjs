@@ -15,7 +15,7 @@ const [, , URL = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
 
   await p.goto(URL)
   const local = p.getByRole('button', { name: 'Try it on this phone only (test mode)' })
-  if (await local.isVisible().catch(() => false) || await local.waitFor({ timeout: 3000 }).then(() => true, () => false)) await local.click()
+  if (await local.isVisible().catch(() => false) || await local.waitFor({ timeout: 10000 }).then(() => true, () => false)) await local.click()
   await step('first-run setup as manager Rori', async () => {
     await p.getByLabel('Your name').fill('Rori'); await btn('manager').click()
     await p.getByLabel('New PIN (4 numbers)').fill('2222'); await p.getByLabel('Type the PIN again').fill('2222')
@@ -42,18 +42,18 @@ const [, , URL = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await p.getByRole('tab', { name: 'Main' }).click(); await p.getByRole('button', { name: /^Outdoor,/ }).click(); await p.getByRole('button', { name: /^Outdoor,/ }).click()
     await p.getByRole('button', { name: /^Pink Ink,/ }).click()
     await p.locator('.btot').getByText('R90').waitFor(); await shot('03-basket')
-    await btn('Pay').click(); await btn('R100').click()
+    await btn('Cash').click(); await btn('R100').click()
     await p.locator('.change').getByText('R10').waitFor(); await shot('04-pay-change')
     await btn('Record sale').click(); await p.getByText('Sale recorded').waitFor()
   })
-  await step('three-tap sale: Gummies → Pay → Record', async () => {
-    await p.getByRole('button', { name: /^Gummies,/ }).click(); await btn('Pay').click(); await btn('Record sale').click()
+  await step('three-tap sale: Gummies → Cash → Record', async () => {
+    await p.getByRole('button', { name: /^Gummies,/ }).click(); await btn('Cash').click(); await btn('Record sale').click()
     await p.getByText(/Last sale R30/).waitFor()
   })
   await step('undo last sale', async () => { await btn('Undo').click(); await p.getByText('Last sale undone').waitFor() })
   await step('split sale: Kings + Super Cheese = R280, R200 card + R80 cash', async () => {
     await p.getByRole('tab', { name: 'Main' }).click(); await p.getByRole('button', { name: /^Kings,/ }).click(); await p.getByRole('button', { name: /^Super Cheese,/ }).click()
-    await btn('Pay').click(); await p.getByRole('tab', { name: 'SPLIT' }).click(); await btn('R200').click()
+    await btn('Part cash, part card').click(); await btn('R200').click()
     await p.locator('.change').getByText('R80').waitFor(); await btn('Record sale').click(); await p.getByText('Sale recorded').waitFor()
   })
   await step('stock in: 24 Coke, then Drinks shows 24 left', async () => {
@@ -75,12 +75,12 @@ const [, , URL = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
   })
   await step('clock out: lock is blocked and says why', async () => {
     await btn('Close').click(); await p.getByText('Count every item (24 left)').waitFor()
-    if (!(await btn('Lock shift').isDisabled())) throw new Error('lock should be disabled')
+    if (!(await btn('Lock & send report').isDisabled())) throw new Error('lock should be disabled')
   })
   await step('count: Super Cheese 23 (one short), rest match', async () => {
     const sc = p.getByLabel('Counted Super Cheese'); await sc.fill('23'); await sc.blur()
     await p.getByText('−1 · −R30').waitFor()
-    for (let i = 0; i < 40; i++) { const m = p.getByRole('button', { name: /matches$/ }); if (!(await m.count())) break; await m.first().click(); await p.waitForTimeout(60) }
+    for (let i = 0; i < 6; i++) { const m = p.getByRole('button', { name: /^All the rest in .* match$/ }); if (!(await m.count())) break; await m.first().click(); await p.waitForTimeout(300) }
     await p.getByText(/24 of 24 counted/).waitFor()
   })
   await step('card slip R200 and cash R150 match', async () => {
@@ -92,7 +92,7 @@ const [, , URL = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await p.getByRole('button', { name: /Going home/ }).click(); await pin('1111')
     await p.getByRole('button', { name: /Starting/ }).click(); await btn('Employee B').click(); await pin('3333')
     await p.getByText('Employee B').first().waitFor(); await shot('06-clock-out')
-    await btn('Lock shift').click(); await p.getByText('Shift report').waitFor()
+    await btn('Lock & send report').click(); await p.getByText('Shift report').waitFor()
   })
   await step('report shows flags and sends (downloads both files headless)', async () => {
     await p.getByText(/Super Cheese: counted 23, expected 24/).waitFor()

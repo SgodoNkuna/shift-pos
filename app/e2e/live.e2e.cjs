@@ -23,7 +23,7 @@ const [, , URL, TE, TM, SHOTS = '/tmp'] = process.argv
   })
   await step('clock in and sell Outdoor for R20 cash', async () => {
     await btn(emp, 'Confirm & start shift').click(); await emp.getByRole('tab', { name: 'Main' }).click()
-    await emp.getByRole('button', { name: /^Outdoor,/ }).click(); await btn(emp, 'Pay').click(); await btn(emp, 'Record sale').click()
+    await emp.getByRole('button', { name: /^Outdoor,/ }).click(); await btn(emp, 'Cash').click(); await btn(emp, 'Record sale').click()
     await emp.getByText('Sale recorded').waitFor()
   })
   await step('ask for 0.5 g Martian F stock out', async () => {

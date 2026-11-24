@@ -165,3 +165,22 @@ export function profit(d: ShiftData, costs: Record<string, number>) {
     missing: lines.filter(l => l.costCents == null).map(l => l.productId),
   }
 }
+
+/** Totals over several shifts for the Reports screen. `profitCents` only counts items that have a cost price. */
+export function periodSummary(ds: ShiftData[], costs: Record<string, number>) {
+  const t = ds.map(shiftTotals)
+  const sold = new Map<string, { qty: number; salesCents: number }>()
+  for (const d of ds) for (const l of itemLines(d)) if (l.sold) {
+    const x = sold.get(l.productId) ?? { qty: 0, salesCents: 0 }
+    sold.set(l.productId, { qty: roundQty(x.qty + l.sold), salesCents: x.salesCents + l.salesCents })
+  }
+  return {
+    shifts: ds.length,
+    salesCents: sumBy(t, x => x.salesCents), cardCents: sumBy(t, x => x.cardCents), cashCents: sumBy(t, x => x.cashCents),
+    expensesCents: sumBy(t, x => x.expensesCents),
+    cashDiffCents: sumBy(t, x => x.cashDiffCents ?? 0),
+    stockDiffCents: sumBy(ds, d => sumBy(itemLines(d), l => l.diffCents ?? 0)),
+    profitCents: sumBy(ds, d => profit(d, costs).profitCents),
+    top: [...sold.entries()].map(([productId, v]) => ({ productId, ...v })).sort((a, b) => b.salesCents - a.salesCents).slice(0, 5),
+  }
+}

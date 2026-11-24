@@ -20,7 +20,7 @@ export const LOCK_TEXT: Record<LockReason | 'not_counted', string> = {
 const diffText = (d: number | null, cents: number | null, unit: string) =>
   d == null ? '' : d === 0 ? '✓' : `${d > 0 ? '+' : '−'}${Math.abs(d)}${unit === 'g' ? ' g' : ''} · ${formatRand(cents!)}`
 
-export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMember; onLocked: (shiftId: string) => void }) {
+export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMember; onLocked: (shiftId: string, send?: boolean) => void }) {
   const toast = useToast()
   const staff = useStaff()
   const [pinFor, setPinFor] = useState<null | 'out' | 'in'>(null)
@@ -36,7 +36,7 @@ export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMem
   if (uncounted.length) reasons.unshift('not_counted')
   const name = (sid?: string) => staff.find(x => x.id === sid)?.name
   const lock = async () => {
-    try { await actions.lockShift(id, me.id); toast('Shift locked'); onLocked(id) }
+    try { await actions.lockShift(id, me.id); toast('Shift locked'); onLocked(id, true) }
     catch (e) { toast(e instanceof LockError ? LOCK_TEXT[e.reasons[0]] : 'Could not lock') }
   }
   const cats = [...new Set(active.map(p => p.categoryId))]
@@ -51,7 +51,13 @@ export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMem
         <div className="scrollx"><table className="ctable">
           <thead><tr><th>Item</th><th className="r">Expect</th><th className="r">Counted</th><th className="r">Diff</th></tr></thead>
           <tbody>{cats.map(c => [
-            <tr className="cat" key={c}><td colSpan={4}>{catLabel(c)}</td></tr>,
+            <tr className="cat" key={c}><td colSpan={3}>{catLabel(c)}</td><td className="num">
+              {active.some(p => p.categoryId === c && s.counts?.[p.id] == null) &&
+                <button className="linkbtn" aria-label={`All the rest in ${catLabel(c)} match`} onClick={async () => {
+                  for (const p of active.filter(p => p.categoryId === c && s.counts?.[p.id] == null))
+                    await actions.setCount(id, p.id, lines.find(l => l.productId === p.id)!.expected, me.id)
+                }}>All the rest match</button>}
+            </td></tr>,
             ...active.filter(p => p.categoryId === c).map(p => { const l = lines.find(x => x.productId === p.id)!
               return (
                 <tr key={p.id} className={l.diff ? 'diff' : ''}>
@@ -97,7 +103,7 @@ export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMem
 
         {reasons.length > 0 && <ul className="small warn" style={{ margin: 0, paddingLeft: 18 }} aria-label="Before you can lock">
           {reasons.map(r => <li key={r}>{LOCK_TEXT[r]}{r === 'not_counted' ? ` (${uncounted.length} left)` : ''}</li>)}</ul>}
-        <button className="blk primary" disabled={reasons.length > 0} onClick={lock}>Lock shift</button>
+        <button className="blk primary" disabled={reasons.length > 0} onClick={lock}>Lock &amp; send report</button>
       </div>
 
       {pinFor && <Sheet title={pinFor === 'out' ? 'Your PIN' : 'Next person’s PIN'} onClose={() => setPinFor(null)}>

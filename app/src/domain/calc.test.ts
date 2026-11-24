@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'vitest'
-import { itemLines, shiftTotals, changeDue, shiftFlags, canLock, profit } from './calc'
+import { itemLines, shiftTotals, changeDue, shiftFlags, canLock, profit, periodSummary } from './calc'
 import { sheet28Nov, sheet28NovMoney, prototypeNight } from './fixtures'
 
 const line = (d: ReturnType<typeof prototypeNight>, id: string) => itemLines(d).find(l => l.productId === id)!
@@ -149,5 +149,20 @@ describe('profit (boss only)', () => {
     expect(p.missing.sort()).toEqual(['kings', 'pinkink', 'supercheese'])
     expect(p.lines.find(l => l.productId === 'kings')!.profitCents).toBeNull()
     expect(p.profitCents).toBe(4000 - 1800)
+  })
+})
+
+describe('periodSummary (reports)', () => {
+  test('adds up shifts, differences and best sellers', () => {
+    const a = prototypeNight()
+    const b = prototypeNight(); b.shift.id = 's2'; b.shift.cashCountedCents = 30000 // R50 short
+    const r = periodSummary([a, b], { outdoor: 900 })
+    expect(r).toMatchObject({ shifts: 2, salesCents: 74000, cardCents: 40000, cashCents: 34000, expensesCents: 4000, cashDiffCents: -5000, stockDiffCents: -6000 })
+    expect(r.top[0]).toEqual({ productId: 'kings', qty: 2, salesCents: 50000 })
+    expect(r.top.map(t => t.productId)).toEqual(['kings', 'pinkink', 'outdoor', 'supercheese'])
+    expect(r.profitCents).toBe(2 * (4000 - 1800))
+  })
+  test('an empty period is all zeros', () => {
+    expect(periodSummary([], {})).toMatchObject({ shifts: 0, salesCents: 0, top: [] })
   })
 })

@@ -15,7 +15,7 @@ export async function pull(sb: SupabaseClient, meId: string): Promise<void> {
     sb.from('staff').select('id, name, role, phone, active'),
     sb.from('products').select('*'),
     sb.from('settings').select('key, value'),
-    sb.from('shifts').select('*').order('opened_at', { ascending: false }).limit(12),
+    sb.from('shifts').select('*').gte('date', new Date(Date.now() - 31 * 86400_000).toISOString().slice(0, 10)).order('opened_at', { ascending: false }).limit(70),
     sb.from('product_costs').select('product_id, cents'), // empty unless this is the boss
   ])
   for (const r of [staff, products, settings, shifts]) if (r.error) throw r.error

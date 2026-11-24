@@ -11,7 +11,7 @@ import { supabase } from '../../sync/client'
 const time = (iso: string) => new Date(iso).toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Johannesburg' })
 
 /** What the boss and manager see: the shift that is open now, approvals, and the last report. */
-export function Overview({ me, onStartShift, onOpenReport }: { me: StaffMember; onStartShift: () => void; onOpenReport: (id: string) => void }) {
+export function Overview({ me, onStartShift, onOpenReport, onReports }: { me: StaffMember; onStartShift: () => void; onOpenReport: (id: string) => void; onReports?: () => void }) {
   const staff = useStaff()
   const shifts = useLiveQuery(() => db.shifts.toArray(), [], [])
   const open = shifts.find(s => !s.lockedAt)
@@ -51,6 +51,7 @@ export function Overview({ me, onStartShift, onOpenReport }: { me: StaffMember; 
           <button className="blk primary" onClick={onStartShift}>Start a shift myself</button>
         </>}
         {last && lastData && <button className="blk ghost" onClick={() => onOpenReport(last.id)}>Last report: {last.kind} {last.date} · {formatRand(shiftTotals(lastData).salesCents)}</button>}
+        {onReports && <button className="blk ghost" onClick={onReports}>Reports · 7 and 30 days</button>}
       </div>
     </div>
   )

@@ -14,6 +14,7 @@ import { Report } from './screens/Report'
 import { People } from './screens/People'
 import { Settings } from './screens/Settings'
 import { Products } from './screens/Products'
+import { Reports } from './screens/Reports'
 import { Join, Welcome } from './screens/Join'
 import { Overview } from './screens/Overview'
 import { deviceStaffId, supabase } from '../sync/client'
@@ -47,16 +48,18 @@ function Shell() {
   const [deviceId, setDeviceId] = useState<string | null | undefined>(supabase ? undefined : null)
   const [localMode, setLocalMode] = useState(false)
   const [leadTill, setLeadTill] = useState(false)
+  const [reports, setReports] = useState(false)
   useEffect(() => { if (supabase) { void deviceStaffId().then(setDeviceId); startSync() } }, [])
   const staff = useStaff()
   const [me, setMe] = useState<StaffMember | null>(null)
   const [tab, setTab] = useState<Tab>('sell')
   const [reportId, setReportId] = useState<string | null>(null)
+  const [autoSend, setAutoSend] = useState(false)
   const [menu, setMenu] = useState<null | 'menu' | 'people' | 'settings' | 'products'>(null)
   const open = useLiveQuery(() => openShiftNow(), [], undefined)
   const data = useShiftData(reportId ?? open?.id)
   const pending = data?.moves.filter(m => m.kind === 'out' && m.status === 'pending').length ?? 0
-  const signOut = () => { setMe(null); setReportId(null); setTab('sell'); setMenu(null); setLeadTill(false) }
+  const signOut = () => { setMe(null); setReportId(null); setTab('sell'); setMenu(null); setLeadTill(false); setReports(false) }
   const lead = me != null && me.role !== 'employee'
 
   if (staffCount === undefined || deviceId === undefined) return null
@@ -76,9 +79,10 @@ function Shell() {
       <div className="mark"><span>CANNABIS LOUNGE</span>HASH</div>
       <PinPad people={deviceId ? staff.filter(s => s.id === deviceId) : staff} onOk={m => setMe(m)} />
     </div></div>)
-  else if (reportId && data) body = <Report data={data} me={me} onDone={lead ? () => setReportId(null) : signOut} />
+  else if (reportId && data) body = <Report data={data} me={me} autoSend={autoSend} onDone={() => { setAutoSend(false); if (lead) { setReportId(null); setLeadTill(false) } else signOut() }} />
+  else if (lead && reports) body = <Reports me={me} onOpenReport={id => { setReports(false); setReportId(id) }} />
   else if (lead && !leadTill && !(open && open.openedBy === me.id))
-    body = <Overview me={me} onStartShift={() => setLeadTill(true)} onOpenReport={id => setReportId(id)} />
+    body = <Overview me={me} onStartShift={() => setLeadTill(true)} onOpenReport={id => setReportId(id)} onReports={() => setReports(true)} />
   else if (!open) body = <ClockIn me={me} />
   else if (open.openedBy !== me.id && me.role === 'employee') body = (
     <div className="main"><div className="pad stack">
@@ -90,7 +94,7 @@ function Shell() {
     {tab === 'in' && <StockIn data={data} me={me} />}
     {tab === 'out' && <StockOut data={data} me={me} />}
     {tab === 'exp' && <Expense data={data} me={me} />}
-    {tab === 'close' && <ClockOut data={data} me={me} onLocked={id => setReportId(id)} />}
+    {tab === 'close' && <ClockOut data={data} me={me} onLocked={(id, send) => { setAutoSend(!!send); setReportId(id) }} />}
     <nav className="nav">{TABS.map(([k, l]) =>
       <button key={k} className={tab === k ? 'on' : ''} aria-current={tab === k} onClick={() => setTab(k)}>{l}
         {k === 'out' && pending > 0 && <span className="badge">{pending}</span>}</button>)}</nav>
@@ -101,7 +105,8 @@ function Shell() {
       {bar}
       {body}
       {menu === 'menu' && me && <Sheet title="Menu" onClose={() => setMenu(null)}>
-        {lead && <button className="blk" onClick={() => { setLeadTill(false); setReportId(null); setMenu(null) }}>Overview</button>}
+        {lead && <button className="blk" onClick={() => { setLeadTill(false); setReportId(null); setReports(false); setMenu(null) }}>Overview</button>}
+        {lead && <button className="blk" onClick={() => { setReports(true); setReportId(null); setMenu(null) }}>Reports</button>}
         {lead && <button className="blk" onClick={() => setMenu('people')}>People</button>}
         {lead && <button className="blk" onClick={() => setMenu('products')}>Products &amp; prices</button>}
         {me.role === 'boss' && <button className="blk" onClick={() => setMenu('settings')}>Settings</button>}

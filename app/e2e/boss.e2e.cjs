@@ -14,7 +14,7 @@ const [, , BASE = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
 
   await p.goto(BASE)
   await step('set up as boss in test mode', async () => {
-    const local = btn('Try it on this phone only (test mode)'); if (await local.waitFor({ timeout: 3000 }).then(() => true, () => false)) await local.click()
+    const local = btn('Try it on this phone only (test mode)'); if (await local.waitFor({ timeout: 10000 }).then(() => true, () => false)) await local.click()
     await p.getByLabel('Your name').fill('Ta Vuyo'); await btn('boss').click()
     await p.getByLabel('New PIN (4 numbers)').fill('9999'); await p.getByLabel('Type the PIN again').fill('9999'); await btn('Set up').click()
     await p.getByText('Shop overview').waitFor()
@@ -46,7 +46,7 @@ const [, , BASE = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await btn('Confirm & start shift').click(); await p.getByRole('tab', { name: 'Main' }).waitFor()
   })
   await step('sell Outdoor R20 cash; new Lighter tile is on the Drinks tab; Raw is now R45', async () => {
-    await p.getByRole('tab', { name: 'Main' }).click(); await p.getByRole('button', { name: /^Outdoor,/ }).click(); await btn('Pay').click(); await btn('Record sale').click()
+    await p.getByRole('tab', { name: 'Main' }).click(); await p.getByRole('button', { name: /^Outdoor,/ }).click(); await btn('Cash').click(); await btn('Record sale').click()
     await p.getByText('Sale recorded').waitFor()
     await p.getByRole('tab', { name: 'Drinks' }).click(); await p.getByRole('button', { name: /^Lighter, R15/ }).waitFor()
     await p.getByRole('tab', { name: 'Rolling' }).click(); await p.getByRole('button', { name: /^Raw, R45/ }).waitFor()
@@ -54,12 +54,12 @@ const [, , BASE = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
   await step('stock out reasons include "Broken"', async () => { await btn('Out').click(); await btn('Broken').waitFor() })
   await step('clock out and lock (cash R220 = float R200 + R20)', async () => {
     await btn('Close').click()
-    for (let i = 0; i < 40; i++) { const m = p.getByRole('button', { name: /matches$/ }); if (!(await m.count())) break; await m.first().click(); await p.waitForTimeout(40) }
+    for (let i = 0; i < 6; i++) { const m = p.getByRole('button', { name: /^All the rest in .* match$/ }); if (!(await m.count())) break; await m.first().click(); await p.waitForTimeout(300) }
     const slip = p.getByLabel('Card machine end-of-day total'); await slip.fill('0'); await slip.blur()
     const cash = p.getByLabel('Cash you counted'); await cash.fill('220'); await cash.blur()
     await p.getByRole('button', { name: /Going home/ }).click(); await pin('9999')
     await p.getByRole('button', { name: /Starting/ }).click(); await pin('3333')
-    await btn('Lock shift').click(); await p.getByText('Shift report').waitFor()
+    await btn('Lock & send report').click(); await p.getByText('Shift report').waitFor()
   })
   await step('report: correction flagged with the boss\'s name; boss sees profit R11 on Outdoor', async () => {
     await p.getByText('Opening count changed at clock in: Super Cheese 25 → 24 (by Ta Vuyo)').waitFor()
@@ -67,6 +67,14 @@ const [, , BASE = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     const prof = p.locator('.block', { hasText: 'Profit · only you see this' })
     await prof.locator('tr', { hasText: 'Outdoor' }).getByText('R11').waitFor()
     await prof.scrollIntoViewIfNeeded(); await p.screenshot({ path: `${SHOTS}/boss-report-profit.png` })
+  })
+  await step('reports: last 7 days shows the shift, R20 sales, R11 profit, Outdoor best seller', async () => {
+    await btn('Done').click(); await btn('Reports · 7 and 30 days').click()
+    await p.getByText('1 locked shift').waitFor()
+    await p.locator('.block', { hasText: 'Profit · only you' }).getByText('R11').waitFor()
+    await p.getByText('1. Outdoor').waitFor()
+    await p.locator('.req', { hasText: 'R20' }).getByText('all adds up').waitFor()
+    await p.screenshot({ path: `${SHOTS}/boss-reports.png` })
   })
   console.log('errors:', errors.length ? errors : 'none')
   await b.close()

@@ -32,7 +32,7 @@ export function AlertsCard({ me, compact = false }: { me: StaffMember; compact?:
       <span>{WHY[me.role]}</span>
       {st === 'off' && <button className="blk sm primary" disabled={busy} onClick={on}>Turn on alerts</button>}
       {st === 'on' && <button className="blk sm" disabled={busy} onClick={test}>Send me a test alert</button>}
-      {st === 'blocked' && <span>Alerts are blocked for this app. Open your phone’s <b>Settings → Notifications</b> (or the browser’s site settings), allow Shift POS, then come back.</span>}
+      {st === 'blocked' && <span>Alerts are blocked for this app. Open your phone’s <b>Settings → Notifications</b> (or the browser’s site settings), allow Hash Lounge, then come back.</span>}
       {st === 'install-first' && <span>On iPhone, alerts only work from the Home Screen: tap the <b>Share</b> button, then <b>Add to Home Screen</b>. Open Shift POS from there and turn alerts on.</span>}
       {st === 'unsupported' && <span>{isIos() ? 'Update your iPhone to iOS 16.4 or newer to get alerts.' : 'This browser cannot show alerts. Use Chrome.'}</span>}
     </div>
