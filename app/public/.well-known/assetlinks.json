@@ -1,0 +1,4 @@
+[{
+  "relation": ["delegate_permission/common.handle_all_urls"],
+  "target": { "namespace": "android_app", "package_name": "za.hashlounge.pos", "sha256_cert_fingerprints": ["9A:84:ED:F4:17:8D:EC:56:1F:AD:CB:05:9F:52:41:4C:61:B2:84:F8:11:DE:FB:FB:83:F4:8D:2E:7D:B3:E6:8B"] }
+}]

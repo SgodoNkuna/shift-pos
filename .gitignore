@@ -3,3 +3,9 @@ dist/
 .env*
 *.local
 .DS_Store
+android.keystore
+*.keystore
+.keypass
+android/app/
+android/*.apk
+android/*.aab
