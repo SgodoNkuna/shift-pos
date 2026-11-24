@@ -1,4 +1,5 @@
 import ExcelJS from 'exceljs'
+import { SHOP } from '../app/brand'
 import { displayName, itemLines, shiftFlags, shiftTotals } from '../domain/calc'
 import type { ShiftData } from '../domain/types'
 
@@ -11,7 +12,7 @@ export async function buildXlsxBuffer(d: ShiftData, names: Names = {}): Promise<
   const n = (id?: string) => (id ? names[id] ?? id : '')
   const t = shiftTotals(d)
   const wb = new ExcelJS.Workbook()
-  wb.creator = 'Shift POS'
+  wb.creator = SHOP.name
   const head = (ws: ExcelJS.Worksheet) => { ws.getRow(1).font = { bold: true }; ws.views = [{ state: 'frozen', ySplit: 1 }] }
 
   const sum = wb.addWorksheet('Summary')

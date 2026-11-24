@@ -73,7 +73,7 @@ function Shell() {
   else if (staffCount === 0) body = supabase && !localMode ? <Welcome onLocalMode={() => setLocalMode(true)} /> : <Setup onDone={setMe} />
   else if (!me) body = (
     <div className="main enter"><div className="pad stack pinwrap">
-      <div className="mark"><span>SHIFT</span>POS</div>
+      <div className="mark"><span>CANNABIS LOUNGE</span>HASH</div>
       <PinPad people={deviceId ? staff.filter(s => s.id === deviceId) : staff} onOk={m => setMe(m)} />
     </div></div>)
   else if (reportId && data) body = <Report data={data} me={me} onDone={lead ? () => setReportId(null) : signOut} />

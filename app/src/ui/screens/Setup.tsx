@@ -19,7 +19,7 @@ export function Setup({ onDone }: { onDone: (m: StaffMember) => void }) {
   }
   return (
     <div className="pad stack enter">
-      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>SHIFT</span>POS</div>
+      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>CANNABIS LOUNGE</span>HASH</div>
       <div className="note">Set up this phone. You only do this once. Each person signs in with their own 4-number PIN.</div>
       <label className="lbl" htmlFor="su-name">Your name</label>
       <input id="su-name" value={name} onChange={e => setName(e.target.value)} autoComplete="name" />

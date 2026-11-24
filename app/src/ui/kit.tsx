@@ -2,6 +2,7 @@ import { createContext, useContext, useState, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, actions } from '../app/store'
 import { supabase } from '../sync/client'
+import { SHOP } from '../app/brand'
 import type { StaffMember } from '../data/db'
 import { createPinGuard, MAX_TRIES } from '../auth/pin'
 import type { ShiftData } from '../domain/types'
@@ -32,7 +33,7 @@ export function Sheet({ title, onClose, children }: { title: ReactNode; onClose:
 }
 
 export function Header({ title, sub }: { title: string; sub?: ReactNode }) {
-  return <div className="hdr"><div className="eyebrow">Shift POS</div><h2>{title}</h2>{sub && <div className="muted small">{sub}</div>}</div>
+  return <div className="hdr"><div className="eyebrow">{SHOP.name}</div><h2>{title}</h2>{sub && <div className="muted small">{sub}</div>}</div>
 }
 
 /* ---------- Data hooks ---------- */

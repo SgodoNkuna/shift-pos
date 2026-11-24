@@ -1,7 +1,7 @@
 {
-  "name": "Shift POS",
-  "short_name": "Shift POS",
-  "description": "Till, stock count and shift report for the shop.",
+  "name": "Hash Cannabis Lounge",
+  "short_name": "Hash Lounge",
+  "description": "Till, stock count and shift reports for Hash Cannabis Lounge, Bloemfontein.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

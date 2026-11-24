@@ -4,6 +4,7 @@ import { displayName, itemLines, shiftFlags, shiftTotals } from '../domain/calc'
 import { formatQty, formatRand } from '../domain/num'
 import type { ShiftData } from '../domain/types'
 import type { Names } from './xlsx'
+import { SHOP } from '../app/brand'
 
 /** The PDF's built-in font has no "−" or "✓". */
 const safe = (s: string) => s.replace(/−/g, '-').replace(/✓/g, 'OK').replace(/ · /g, ', ').replace(/·/g, ',')
@@ -16,7 +17,9 @@ export function buildPdf(d: ShiftData, names: Names = {}): Blob {
   const t = shiftTotals(d)
   const lines = itemLines(d)
   const kind = d.shift.kind === 'day' ? 'Day' : 'Night'
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(16)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(150, 110, 30)
+  doc.text(SHOP.name.toUpperCase() + ' · ' + SHOP.city.toUpperCase(), 14, 10)
+  doc.setTextColor(0, 0, 0); doc.setFontSize(16)
   doc.text(`${kind.toUpperCase()} SHIFT  ${d.shift.date}`, 14, 16)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9)
   doc.text(safe(`${n(d.shift.openedBy)} -> ${n(d.shift.pinInBy)}   Locked ${d.shift.lockedAt ? new Date(d.shift.lockedAt).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) : 'NO'}`), 14, 22)

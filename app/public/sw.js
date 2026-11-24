@@ -1,5 +1,5 @@
-// Shift POS background helper: opens the app without signal, and shows alerts.
-const CACHE = 'shiftpos-v1'
+// Hash Cannabis Lounge background helper: opens the app without signal, and shows alerts.
+const CACHE = 'shiftpos-v2'
 
 self.addEventListener('install', e => {
   self.skipWaiting()
@@ -37,7 +37,7 @@ self.addEventListener('fetch', e => {
 })
 
 self.addEventListener('push', e => {
-  let d = { title: 'Shift POS', body: '', tag: 'shiftpos' }
+  let d = { title: 'Hash Lounge', body: '', tag: 'shiftpos' }
   try { d = { ...d, ...e.data.json() } } catch { /* plain message */ }
   e.waitUntil(self.registration.showNotification(d.title, {
     body: d.body, tag: d.tag, renotify: true, icon: '/icon-192.png', badge: '/icon-192.png',

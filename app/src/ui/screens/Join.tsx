@@ -49,9 +49,9 @@ export function Join({ token, onDone }: { token: string; onDone: (m: StaffMember
 
   return (
     <div className="main enter"><div className="pad stack">
-      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>SHIFT</span>POS</div>
+      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>CANNABIS LOUNGE</span>HASH</div>
       {step !== 'pin' ? <>
-        <div className="note">You were invited to the shop’s shift app. Tap below to set up this phone. It only works once.</div>
+        <div className="note">You were invited to the Hash Cannabis Lounge shift app. Tap below to set up this phone. It only works once.</div>
         <button className="blk primary" onClick={join} disabled={step === 'busy'}>{step === 'busy' ? 'Setting up…' : 'Set up this phone'}</button>
       </> : <>
         <div className="note">Welcome, <b>{who?.name}</b> ({who?.role}). Choose a 4-number PIN. You type it every time you open the app.</div>
@@ -69,7 +69,7 @@ export function Join({ token, onDone }: { token: string; onDone: (m: StaffMember
 export function Welcome({ onLocalMode }: { onLocalMode: () => void }) {
   return (
     <div className="main enter"><div className="pad stack">
-      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>SHIFT</span>POS</div>
+      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>CANNABIS LOUNGE</span>HASH</div>
       <div className="note">Open the <b>invite link</b> the manager sent you on WhatsApp. It sets up this phone for you.</div>
       <p className="muted small">No link? Ask the manager or the boss to send you one from the app (Menu → People).</p>
       <button className="linkbtn" onClick={onLocalMode}>Try it on this phone only (test mode)</button>

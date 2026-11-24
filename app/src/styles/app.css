@@ -51,7 +51,7 @@ select, input { width: 100%; min-height: 48px; background: var(--steel); border:
 /* Sign in */
 .pinwrap { align-items: center; text-align: center; padding-top: 28px }
 .mark { font: 700 44px/.9 var(--f-display); letter-spacing: .04em; display: flex; flex-direction: column }
-.mark span { font-size: 16px; letter-spacing: .5em; color: var(--accent); margin-bottom: 4px }
+.mark span { font-size: 13px; letter-spacing: .32em; color: var(--accent); margin-bottom: 4px }
 .who { display: grid; gap: 8px; width: 100% }
 .who .blk.on { border-color: var(--accent); color: var(--accent) }
 .dots { display: flex; gap: 14px; margin: 6px 0 }
