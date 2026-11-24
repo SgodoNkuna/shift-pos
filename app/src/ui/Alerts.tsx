@@ -15,11 +15,11 @@ export function AlertsCard({ me, compact = false }: { me: StaffMember; compact?:
   const [st, setSt] = useState<AlertState | null>(null)
   const [busy, setBusy] = useState(false)
   useEffect(() => { void alertState().then(setSt) }, [])
-  if (st === null || (compact && (st === 'on' || st === 'unsupported'))) return null
+  if (st === null || (compact && (st === 'on' || st === 'unsupported' || st === 'needs-account'))) return null
   const on = async () => {
     setBusy(true)
     try { const s = await turnOnAlerts(me.id); setSt(s); if (s === 'on') toast('Alerts are on') }
-    catch { toast('Could not turn on alerts. Check the internet.') } finally { setBusy(false) }
+    catch (e) { toast(`Could not turn on alerts: ${(e as Error).message || 'check the internet'}`) } finally { setBusy(false) }
   }
   const test = async () => {
     setBusy(true)
@@ -34,6 +34,7 @@ export function AlertsCard({ me, compact = false }: { me: StaffMember; compact?:
       {st === 'on' && <button className="blk sm" disabled={busy} onClick={test}>Send me a test alert</button>}
       {st === 'blocked' && <span>Alerts are blocked for this app. Open your phone’s <b>Settings → Notifications</b> (or the browser’s site settings), allow Hash Lounge, then come back.</span>}
       {st === 'install-first' && <span>On iPhone, alerts only work from the Home Screen: tap the <b>Share</b> button, then <b>Add to Home Screen</b>. Open Shift POS from there and turn alerts on.</span>}
+      {st === 'needs-account' && <span>Alerts only work on a phone that joined with its <b>invite link</b>. This phone is in demo or test mode: tap <b>Leave</b> below, then open your invite link.</span>}
       {st === 'unsupported' && <span>{isIos() ? 'Update your iPhone to iOS 16.4 or newer to get alerts.' : 'This browser cannot show alerts. Use Chrome.'}</span>}
     </div>
   )

@@ -13,11 +13,11 @@ const [, , BASE = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
   const step = async (what, fn) => { try { await fn(); console.log('ok  ', what) } catch (e) { console.log('FAIL', what, '-', e.message.split('\n')[0]); await p.screenshot({ path: `${SHOTS}/boss-fail.png` }); await b.close(); process.exit(1) } }
 
   await p.goto(BASE)
-  await step('set up as boss in test mode', async () => {
-    const local = btn('Try it on this phone only (test mode)'); if (await local.waitFor({ timeout: 10000 }).then(() => true, () => false)) await local.click()
-    await p.getByLabel('Your name').fill('Ta Vuyo'); await btn('boss').click()
-    await p.getByLabel('New PIN (4 numbers)').fill('9999'); await p.getByLabel('Type the PIN again').fill('9999'); await btn('Set up').click()
+  await step('start the demo and sign in as Demo Boss; alerts explain they need an invite', async () => {
+    await btn('Try the demo').click(); await btn('Demo Boss').click(); await pin('1111')
     await p.getByText('Shop overview').waitFor()
+    await btn('Menu').click(); await p.getByText('Alerts only work on a phone that joined').waitFor()
+    await p.getByRole('button', { name: /Leave the demo/ }).waitFor(); await close()
   })
   await step('settings: float R200 and a new reason "Broken"', async () => {
     await menu('Settings'); await p.getByLabel('Change left in the drawer at every handover').fill('200'); await p.getByLabel('Change left in the drawer at every handover').blur()
@@ -33,10 +33,6 @@ const [, , BASE = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await btn('Add a product').click(); await p.getByLabel('Name').fill('Lighter'); await btn('Drinks').click(); await p.getByLabel('Price (R)', { exact: true }).fill('15')
     await btn('Add product').click(); await p.getByText('Lighter added').waitFor()
     await p.getByRole('button', { name: /^Raw R45/ }).waitFor(); await p.screenshot({ path: `${SHOTS}/boss-products.png` }); await close()
-  })
-  await step('add Employee B for the handover', async () => {
-    await menu('People'); await p.getByLabel('Name').fill('Employee B'); await p.getByLabel('Their PIN').fill('3333'); await btn('Add person').click()
-    await p.getByText('Employee B added').waitFor(); await close()
   })
   await step('clock in: correct Super Cheese 25 → 24; float shows R200', async () => {
     await btn('Start a shift myself').click(); await btn('Correct a count').click()
@@ -57,12 +53,12 @@ const [, , BASE = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     for (let i = 0; i < 6; i++) { const m = p.getByRole('button', { name: /^All the rest in .* match$/ }); if (!(await m.count())) break; await m.first().click(); await p.waitForTimeout(300) }
     const slip = p.getByLabel('Card machine end-of-day total'); await slip.fill('0'); await slip.blur()
     const cash = p.getByLabel('Cash you counted'); await cash.fill('220'); await cash.blur()
-    await p.getByRole('button', { name: /Going home/ }).click(); await pin('9999')
-    await p.getByRole('button', { name: /Starting/ }).click(); await pin('3333')
+    await p.getByRole('button', { name: /Going home/ }).click(); await pin('1111')
+    await p.getByRole('button', { name: /Starting/ }).click(); await btn('Demo Employee').click(); await pin('3333')
     await btn('Lock & send report').click(); await p.getByText('Shift report').waitFor()
   })
   await step('report: correction flagged with the boss\'s name; boss sees profit R11 on Outdoor', async () => {
-    await p.getByText('Opening count changed at clock in: Super Cheese 25 → 24 (by Ta Vuyo)').waitFor()
+    await p.getByText('Opening count changed at clock in: Super Cheese 25 → 24 (by Demo Boss)').waitFor()
     await p.getByText('Cash counted matches expected (R220)').waitFor()
     const prof = p.locator('.block', { hasText: 'Profit · only you see this' })
     await prof.locator('tr', { hasText: 'Outdoor' }).getByText('R11').waitFor()

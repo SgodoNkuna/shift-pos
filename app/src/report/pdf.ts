@@ -18,7 +18,7 @@ export function buildPdf(d: ShiftData, names: Names = {}): Blob {
   const lines = itemLines(d)
   const kind = d.shift.kind === 'day' ? 'Day' : 'Night'
   doc.setFont('helvetica', 'bold'); doc.setFontSize(9); doc.setTextColor(150, 110, 30)
-  doc.text(SHOP.name.toUpperCase() + ' · ' + SHOP.city.toUpperCase(), 14, 10)
+  doc.text(SHOP.name.toUpperCase() + '  -  ' + SHOP.address, 14, 10)
   doc.setTextColor(0, 0, 0); doc.setFontSize(16)
   doc.text(`${kind.toUpperCase()} SHIFT  ${d.shift.date}`, 14, 16)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9)

@@ -46,3 +46,26 @@ export async function nextOpening(): Promise<{ opening: Record<string, number>; 
 }
 
 export const openShiftNow = async () => (await db.shifts.toArray()).find(s => !s.lockedAt)
+
+/** Demo people and their PINs. Demo data stays on this phone and never reaches the shop's database. */
+export const DEMO_LOGINS: { name: string; role: Role; pin: string }[] = [
+  { name: 'Demo Boss', role: 'boss', pin: '1111' },
+  { name: 'Demo Manager', role: 'manager', pin: '2222' },
+  { name: 'Demo Employee', role: 'employee', pin: '3333' },
+  { name: 'Demo Employee 2', role: 'employee', pin: '4444' },
+]
+
+export async function startDemo(): Promise<void> {
+  for (const d of DEMO_LOGINS) await addStaff(d.name, d.role, d.pin)
+  await db.products.bulkPut(SHEET_PRODUCTS)
+  await setMeta('firstOpening', SHEET_OPENING)
+  await setMeta('floatCents', 20000)
+  await setMeta('costs', Object.fromEntries(SHEET_PRODUCTS.map(p => [p.id, Math.round(p.priceCents * 0.5)])))
+  await setMeta('demo', true)
+}
+
+/** Wipes everything on this phone (demo or test data) and starts again at the welcome screen. */
+export async function resetPhone(): Promise<void> {
+  await db.delete()
+  location.replace('/')
+}

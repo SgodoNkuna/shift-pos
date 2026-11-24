@@ -66,13 +66,17 @@ export function Join({ token, onDone }: { token: string; onDone: (m: StaffMember
   )
 }
 
-export function Welcome({ onLocalMode }: { onLocalMode: () => void }) {
+export function Welcome({ onDemo }: { onDemo: () => void }) {
   return (
     <div className="main enter"><div className="pad stack">
       <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>CANNABIS LOUNGE</span>HASH</div>
       <div className="note">Open the <b>invite link</b> the manager sent you on WhatsApp. It sets up this phone for you.</div>
       <p className="muted small">No link? Ask the manager or the boss to send you one from the app (Menu → People).</p>
-      <button className="linkbtn" onClick={onLocalMode}>Try it on this phone only (test mode)</button>
+      <div className="block">
+        <b>Just looking?</b>
+        <span className="muted small">The demo has the shop's products and four people to sign in as. Nothing you do reaches the real shop.</span>
+        <button className="blk" onClick={onDemo}>Try the demo</button>
+      </div>
     </div></div>
   )
 }

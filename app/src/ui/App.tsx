@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
-import { db, openShiftNow } from '../app/store'
+import { db, DEMO_LOGINS, getMeta, openShiftNow, resetPhone, startDemo } from '../app/store'
 import type { StaffMember } from '../data/db'
 import { PinPad, Sheet, ToastHost, useShiftData, useStaff } from './kit'
 import { Setup } from './screens/Setup'
@@ -34,6 +34,8 @@ function Clock() {
 function SyncLabel() {
   const [s, setS] = useState<SyncState>(syncState())
   useEffect(() => onSync(setS), [])
+  const demo = useLiveQuery(() => getMeta<boolean>('demo', false), [], false)
+  if (demo) return <span className="net off" title="Demo: saved on this phone only, never sent to the shop."><i />Demo</span>
   const text = s.mode === 'phone' ? 'On phone' : s.mode === 'online' ? (s.waiting ? `Sending ${s.waiting}` : 'Synced')
     : s.mode === 'offline' ? `Offline${s.waiting ? ` · ${s.waiting} waiting` : ''}` : 'Sync problem'
   const tip = s.mode === 'phone' ? 'Saved on this phone only.' : s.mode === 'online' ? 'Saved and shared with the boss.' : 'Saved on this phone. It sends when the internet is back.'
@@ -46,7 +48,6 @@ const joinToken = new URLSearchParams(location.search).get('join')
 function Shell() {
   const staffCount = useLiveQuery(() => db.staff.count())
   const [deviceId, setDeviceId] = useState<string | null | undefined>(supabase ? undefined : null)
-  const [localMode, setLocalMode] = useState(false)
   const [leadTill, setLeadTill] = useState(false)
   const [reports, setReports] = useState(false)
   useEffect(() => { if (supabase) { void deviceStaffId().then(setDeviceId); startSync() } }, [])
@@ -61,6 +62,7 @@ function Shell() {
   const pending = data?.moves.filter(m => m.kind === 'out' && m.status === 'pending').length ?? 0
   const signOut = () => { setMe(null); setReportId(null); setTab('sell'); setMenu(null); setLeadTill(false); setReports(false) }
   const lead = me != null && me.role !== 'employee'
+  const demo = useLiveQuery(() => getMeta<boolean>('demo', false), [], false)
 
   if (staffCount === undefined || deviceId === undefined) return null
   const bar = (
@@ -73,11 +75,13 @@ function Shell() {
 
   let body
   if (joinToken && !me) body = <Join token={joinToken} onDone={m => { setDeviceId(m.id); setMe(m) }} />
-  else if (staffCount === 0) body = supabase && !localMode ? <Welcome onLocalMode={() => setLocalMode(true)} /> : <Setup onDone={setMe} />
+  else if (staffCount === 0) body = supabase ? <Welcome onDemo={() => void startDemo()} /> : <Setup onDone={setMe} />
   else if (!me) body = (
     <div className="main enter"><div className="pad stack pinwrap">
       <div className="mark"><span>CANNABIS LOUNGE</span>HASH</div>
       <PinPad people={deviceId ? staff.filter(s => s.id === deviceId) : staff} onOk={m => setMe(m)} />
+      {demo && <div className="note small" style={{ textAlign: 'left', width: '100%' }}><b>Demo logins</b><br />
+        {DEMO_LOGINS.map(d => <span key={d.name}>{d.name} ({d.role}): PIN <b className="num">{d.pin}</b><br /></span>)}</div>}
     </div></div>)
   else if (reportId && data) body = <Report data={data} me={me} autoSend={autoSend} onDone={() => { setAutoSend(false); if (lead) { setReportId(null); setLeadTill(false) } else signOut() }} />
   else if (lead && reports) body = <Reports me={me} onOpenReport={id => { setReports(false); setReportId(id) }} />
@@ -110,7 +114,8 @@ function Shell() {
         {lead && <button className="blk" onClick={() => setMenu('people')}>People</button>}
         {lead && <button className="blk" onClick={() => setMenu('products')}>Products &amp; prices</button>}
         {me.role === 'boss' && <button className="blk" onClick={() => setMenu('settings')}>Settings</button>}
-        {deviceId && <AlertsCard me={me} />}
+        <AlertsCard me={me} />
+        {!deviceId && supabase && <button className="blk badb" onClick={() => void resetPhone()}>{demo ? 'Leave the demo' : 'Leave test mode'} (wipes this phone)</button>}
         <button className="blk" onClick={signOut}>Sign out</button>
       </Sheet>}
       {menu === 'people' && me && <People me={me} onClose={() => setMenu(null)} />}

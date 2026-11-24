@@ -10,6 +10,7 @@ import { canShareFiles, shareFiles } from '../../report/share'
 import { shareText } from '../../report/summary'
 import { reportFileName } from '../../report/names'
 import { catLabel, Header, useStaff, useToast } from '../kit'
+import { SHOP } from '../../app/brand'
 
 export function Report({ data, me, onDone, autoSend = false }: { data: ShiftData; me: StaffMember; onDone: () => void; autoSend?: boolean }) {
   const toast = useToast()
@@ -45,6 +46,7 @@ export function Report({ data, me, onDone, autoSend = false }: { data: ShiftData
         {s.sentAt ? <div className="banner okb2">Sent · {reportFileName(data, 'pdf')} + {reportFileName(data, 'xlsx')}</div>
           : <div className="banner warnb">Not sent yet. Send it to the Boss + Manager WhatsApp group now.</div>}
         <div className="paper">
+          <div className="small" style={{ marginBottom: 4 }}>{SHOP.name} · {SHOP.address}</div>
           <div className="ph"><div><h4>{s.kind === 'day' ? 'Day' : 'Night'} shift · {s.date}</h4>
             <div>{names[s.openedBy]} → {names[s.pinInBy ?? ''] ?? '—'}</div></div>
             <div style={{ textAlign: 'right' }}>{s.lockedAt ? 'LOCKED' : 'OPEN'}<br />{s.sentAt ? 'SENT' : 'NOT SENT'}</div></div>
