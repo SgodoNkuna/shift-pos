@@ -36,10 +36,13 @@ export function Join({ token, onDone }: { token: string | null; onDone: (m: Staf
       })
       const body = await res.json()
       if (!res.ok) throw new Error(body.error ?? 'This invite link is not valid.')
+      const before = await deviceStaffId()
       const { error } = await supabase!.auth.signInWithPassword({ email: body.email, password })
       if (error) throw new Error('Could not sign in. Try the link again.')
-      // A phone that was used for testing starts clean.
-      await Promise.all([db.shifts.clear(), db.sales.clear(), db.moves.clear(), db.expenses.clear(), db.outbox.clear(), db.staff.clear(), db.products.clear()])
+      // Same person re-joining on this phone: keep everything (including sales not sent yet).
+      // A different person, or a phone used for testing: start clean.
+      if (before !== body.staff.id)
+        await Promise.all([db.shifts.clear(), db.sales.clear(), db.moves.clear(), db.expenses.clear(), db.outbox.clear(), db.staff.clear(), db.products.clear(), db.meta.clear()])
       setWho(body.staff); setStep('pin')
     } catch (e) { setErr((e as Error).message); setStep('start') }
   }

@@ -37,6 +37,8 @@ Deno.serve(async req => {
   if (error || !created.user) return reply(500, { error: 'Could not set up this phone. Try again.' })
   await admin.from('staff').update({ user_id: created.user.id }).eq('id', staff.id)
   await admin.from('audit').insert({ by_staff: staff.id, action: 'join', ref: staff.id })
+  // Any other unused links for this person stop working, so a stray link cannot move their account to another phone.
+  await admin.from('invites').delete().eq('staff_id', staff.id).is('used_at', null).neq('token', token)
 
   return reply(200, { email, staff: { id: staff.id, name: staff.name, role: staff.role } })
 })
