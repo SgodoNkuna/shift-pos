@@ -10,7 +10,7 @@ import { certNumber, sealCode } from './names'
 /** The PDF's built-in font has no "−", "✓" or "·". */
 const safe = (s: string) => s.replace(/−/g, '-').replace(/✓/g, 'OK').replace(/ · /g, ', ').replace(/·/g, ',').replace(/’/g, "'")
 /** The paper sheet's own section names. */
-const SHEET_CAT: Record<string, string> = { main: 'Main products', drinks: 'Beverages', rolling: 'Rolling material' }
+const SHEET_CAT: Record<string, string> = { main: 'Main products', drinks: 'Beverages', rolling: 'Rolling material', hubbly: 'Hubbly' }
 
 type RGB = [number, number, number]
 const INK: RGB = [24, 27, 31], MUTED: RGB = [105, 112, 120], GOLD: RGB = [150, 110, 30], GREEN: RGB = [22, 110, 40], RED: RGB = [179, 38, 30], LINE: RGB = [214, 218, 222]
@@ -122,6 +122,7 @@ export function buildPdf(d: ShiftData, names: Names = {}, logoDataUrl?: string):
     for (const p of ps) {
       const l = lines.find(x => x.productId === p.id)!
       const q = (v: number) => (v ? formatQty(p, v) : '')
+      if (p.track === false) { body.push([displayName(p, d.products), formatRand(p.priceCents), '', '', '', '', q(l.sold), l.salesCents ? formatRand(l.salesCents) : '', 'service', ''].map(safe)); continue }
       if (l.diff) diffRows.add(body.length)
       body.push([displayName(p, d.products), formatRand(p.priceCents), q(l.open), q(l.stockIn), q(l.out), formatQty(p, l.counted ?? l.expected),
         q(l.sold), l.salesCents ? formatRand(l.salesCents) : '', formatRand(l.stockValueCents),

@@ -33,7 +33,7 @@ export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMem
   const id = s.id
   const products = data.products
   const pending = data.moves.filter(m => m.kind === 'out' && m.status === 'pending')
-  const active = products.filter(p => p.active || (data.shift.opening[p.id] ?? 0) > 0)
+  const active = products.filter(p => p.track !== false && (p.active || (data.shift.opening[p.id] ?? 0) > 0))
   const uncounted = active.filter(p => s.counts?.[p.id] == null)
   const reasons: (LockReason | 'not_counted')[] = [...canLock(data).reasons]
   if (uncounted.length) reasons.unshift('not_counted')

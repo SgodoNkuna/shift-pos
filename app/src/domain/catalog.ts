@@ -30,6 +30,8 @@ export const CATALOG: Product[] = [
   { id: 'raw', name: 'Raw', categoryId: 'rolling', unit: 'ea', step: 1, lowAt: 3, priceCents: 4000, active: true, sort: 26 },
   { id: 'honeyp', name: 'Honey P', categoryId: 'rolling', unit: 'ea', step: 1, lowAt: 3, priceCents: 2000, active: true, sort: 27 },
   { id: 'eucalypto', name: 'Eucalypto', categoryId: 'main', unit: 'g', step: 0.5, lowAt: 1, priceCents: 10000, active: false, sort: 99 },
+  { id: 'hubbly', name: 'Hubbly hire', categoryId: 'hubbly', unit: 'ea', step: 1, lowAt: 0, priceCents: 10000, active: true, track: false, sort: 100 },
+  { id: 'hubblyrefill', name: 'Hubbly refill', categoryId: 'hubbly', unit: 'ea', step: 1, lowAt: 0, priceCents: 5000, active: true, track: false, sort: 101 },
 ]
 
 /** Opening stock from the 26 November day shift sheet. */

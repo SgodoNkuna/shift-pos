@@ -45,6 +45,7 @@ function ProductForm({ me, product, cats, costCents, nextSort, onClose }:
   const [price, setPrice] = useState(product ? String(product.priceCents / 100) : '')
   const [low, setLow] = useState(String(product?.lowAt ?? 3))
   const [active, setActive] = useState(product?.active ?? true)
+  const [track, setTrack] = useState(product?.track ?? true)
   const [cost, setCost] = useState(costCents != null ? String(costCents / 100) : '')
   const [busy, setBusy] = useState(false)
   const boss = me.role === 'boss'
@@ -59,7 +60,7 @@ function ProductForm({ me, product, cats, costCents, nextSort, onClose }:
     if (boss && cost.trim() !== '' && costC == null) return toast('Type a cost, like 15')
     const p: Product = {
       id: product?.id ?? `${slug(name)}-${crypto.randomUUID().slice(0, 4)}`, name: name.trim(), categoryId: cat, unit,
-      step: unit === 'g' ? 0.5 : 1, lowAt, priceCents, active, sort: product?.sort ?? nextSort,
+      step: unit === 'g' ? 0.5 : 1, lowAt, priceCents, active, track, sort: product?.sort ?? nextSort,
     }
     setBusy(true)
     try {
@@ -102,6 +103,10 @@ function ProductForm({ me, product, cats, costCents, nextSort, onClose }:
       <label className="row" style={{ alignItems: 'center', cursor: 'pointer' }}>
         <span>Show on the till</span>
         <input type="checkbox" checked={active} onChange={e => setActive(e.target.checked)} style={{ width: 24, minHeight: 24 }} />
+      </label>
+      <label className="row" style={{ alignItems: 'center', cursor: 'pointer' }}>
+        <span>Count stock <span className="muted small">(turn off for services like hubbly hire)</span></span>
+        <input type="checkbox" checked={track} onChange={e => setTrack(e.target.checked)} style={{ width: 24, minHeight: 24 }} />
       </label>
       <button className="blk primary" disabled={busy} onClick={save}>{product ? 'Save' : 'Add product'}</button>
     </Sheet>

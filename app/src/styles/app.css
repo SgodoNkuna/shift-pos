@@ -189,3 +189,9 @@ select, input { width: 100%; min-height: 48px; background: var(--steel); border:
 .cc-d { font: 700 16px var(--f-display); padding: 6px 0; text-align: center; border-radius: 4px; background: var(--steel-2) }
 .cc-d.coin { border-radius: 999px }
 .cc-row input { width: 52px; text-align: center; font: 600 16px var(--f-num) }
+/* Sales list */
+.sl { display: grid; grid-template-columns: 46px 1fr auto auto; gap: 8px; align-items: baseline; padding: 8px 0; border-bottom: 1px solid var(--line) }
+.sl-what { display: grid; gap: 2px; min-width: 0 }
+.sl.undone .sl-what > :first-child, .sl.undone > b { text-decoration: line-through; opacity: .6 }
+.sl.undone b { text-decoration: line-through; color: var(--muted) }
+.sl-confirm { grid-column: 1 / -1; display: grid; gap: 8px; padding: 8px; border: 1px solid var(--bad); border-radius: 6px }

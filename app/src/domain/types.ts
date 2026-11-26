@@ -13,6 +13,8 @@ export interface Product {
   active: boolean
   /** Position on the till and in reports (paper-sheet order). */
   sort?: number
+  /** false = a service like hubbly hire: sold on the till but no stock to count. */
+  track?: boolean
 }
 
 export interface SaleLine { productId: string; qty: number; unitCents: number }

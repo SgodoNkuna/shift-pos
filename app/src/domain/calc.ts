@@ -48,15 +48,16 @@ export function itemLines(d: ShiftData): ItemLine[] {
   return d.products.map(p => {
     const moves = d.moves.filter(m => m.productId === p.id)
     const qtyOf = (f: (m: (typeof moves)[number]) => boolean) => roundQty(sumBy(moves.filter(f), m => m.qty))
-    const open = d.shift.opening[p.id] ?? 0
+    const counted0 = p.track === false ? undefined : d.shift.counts?.[p.id]
+    const open = p.track === false ? 0 : d.shift.opening[p.id] ?? 0
     const stockIn = qtyOf(m => m.kind === 'in' && m.status === 'done')
     const out = qtyOf(m => m.kind === 'out' && m.status === 'approved')
     const pendingOut = qtyOf(m => m.kind === 'out' && m.status === 'pending')
     const lines = sales.flatMap(s => s.lines.filter(l => l.productId === p.id))
     const sold = roundQty(sumBy(lines, l => l.qty))
     const salesCents = Math.round(sumBy(lines, l => l.qty * l.unitCents))
-    const expected = roundQty(open + stockIn - out - pendingOut - sold)
-    const c = d.shift.counts?.[p.id]
+    const expected = p.track === false ? 0 : roundQty(open + stockIn - out - pendingOut - sold)
+    const c = counted0
     const counted = c == null ? null : roundQty(c)
     const diff = counted == null ? null : roundQty(counted - expected)
     return {
@@ -128,7 +129,7 @@ export function shiftFlags(d: ShiftData, names: Record<string, string> = {}): Fl
   for (const s of d.sales.filter(s => s.void)) flags.push({ level: 'warn', code: 'void',
     text: `Voided sale ${formatRand(Math.round(sumBy(s.lines, l => l.qty * l.unitCents)))} · ${s.void!.reason} · by ${who(s.void!.by)}` })
 
-  const low = lines.filter(l => (l.counted ?? l.expected) <= prod(l.productId).lowAt)
+  const low = lines.filter(l => prod(l.productId).track !== false && (l.counted ?? l.expected) <= prod(l.productId).lowAt)
   if (low.length) flags.push({ level: 'warn', code: 'low_stock',
     text: `Low or out of stock: ${low.map(l => `${name(l.productId)} ${formatQty(prod(l.productId), l.counted ?? l.expected)}`).join(', ')}` })
 

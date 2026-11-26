@@ -108,7 +108,7 @@ export function PinPad({ people, onOk, prompt = 'Who is signing in?' }: { people
   )
 }
 
-export const CATEGORY_LABELS: Record<string, string> = { main: 'Main', drinks: 'Drinks', rolling: 'Rolling' }
+export const CATEGORY_LABELS: Record<string, string> = { main: 'Main', drinks: 'Drinks', rolling: 'Rolling', hubbly: 'Hubbly' }
 export const catLabel = (id: string) => CATEGORY_LABELS[id] ?? id.charAt(0).toUpperCase() + id.slice(1)
 
 /** The shop's logo (or the plain wordmark in the demo build) for sign-in and welcome screens. */

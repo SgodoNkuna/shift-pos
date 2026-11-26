@@ -7,7 +7,7 @@ import { catLabel, Sheet } from './kit'
 /** Low and sold-out items, for one WhatsApp message to the boss. */
 export function restockItems(d: ShiftData) {
   return itemLines(d).map(l => ({ l, p: d.products.find(p => p.id === l.productId)! }))
-    .filter(({ l, p }) => p?.active && (l.counted ?? l.expected) <= p.lowAt)
+    .filter(({ l, p }) => p?.active && p.track !== false && (l.counted ?? l.expected) <= p.lowAt)
     .map(({ l, p }) => ({ p, left: l.counted ?? l.expected, name: displayName(p, d.products) }))
 }
 

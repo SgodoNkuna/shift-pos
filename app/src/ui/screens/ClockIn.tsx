@@ -12,7 +12,7 @@ import { categoryOrder, sortProducts } from '../../domain/order'
 
 export function ClockIn({ me }: { me: StaffMember }) {
   const toast = useToast()
-  const products = useLiveQuery(() => db.products.toArray().then(sortProducts), [], [])
+  const products = useLiveQuery(() => db.products.toArray().then(ps => sortProducts(ps.filter(p => p.track !== false))), [], [])
   const next = useLiveQuery(() => nextOpening(), [])
   const floatCents = useLiveQuery(() => getMeta<number>('floatCents', 0), [], 0)
   const { kind, date } = shiftFor(new Date())
