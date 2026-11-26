@@ -1,19 +1,28 @@
 import { BrandMark } from '../kit'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { db } from '../../app/store'
 import { hashPin } from '../../auth/pin'
 import type { StaffMember } from '../../data/db'
-import { supabase, SUPABASE_KEY, SUPABASE_URL } from '../../sync/client'
+import { deviceStaffId, supabase, SUPABASE_KEY, SUPABASE_URL } from '../../sync/client'
 import { syncNow } from '../../sync/engine'
 import { DEMO_ONLY, SHOP } from '../../app/brand'
 
 const hex = (n: number) => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('')
 
 /** Opened from the WhatsApp invite link: sets up this phone for one person, who then picks a PIN. */
-export function Join({ token, onDone }: { token: string; onDone: (m: StaffMember) => void }) {
-  const [step, setStep] = useState<'start' | 'pin' | 'busy'>('start')
+export function Join({ token, onDone }: { token: string | null; onDone: (m: StaffMember) => void }) {
+  const [step, setStep] = useState<'start' | 'pin' | 'busy'>('busy')
   const [err, setErr] = useState<string | null>(null)
   const [who, setWho] = useState<{ id: string; name: string; role: StaffMember['role'] } | null>(null)
+  // A phone that already joined but never saved a PIN (setup was interrupted) goes straight to the PIN step.
+  useEffect(() => { void (async () => {
+    const id = await deviceStaffId()
+    if (id) {
+      const { data } = await supabase!.from('staff').select('id, name, role').eq('id', id).maybeSingle()
+      if (data) { setWho(data as typeof who); setStep('pin'); return }
+    }
+    setStep('start')
+  })() }, [])
   const [pin, setPin] = useState('')
   const [pin2, setPin2] = useState('')
 
@@ -21,6 +30,7 @@ export function Join({ token, onDone }: { token: string; onDone: (m: StaffMember
     setStep('busy'); setErr(null)
     try {
       const password = hex(32)
+      if (!token) throw new Error('Open your invite link again to set up this phone.')
       const res = await fetch(`${SUPABASE_URL}/functions/v1/redeem-invite`, {
         method: 'POST', headers: { 'Content-Type': 'application/json', apikey: SUPABASE_KEY }, body: JSON.stringify({ token, password }),
       })
@@ -54,7 +64,7 @@ export function Join({ token, onDone }: { token: string; onDone: (m: StaffMember
       <BrandMark />
       {step !== 'pin' ? <>
         <div className="note">You were invited to the {SHOP.name} shift app. Tap below to set up this phone. It only works once.</div>
-        <button className="blk primary" onClick={join} disabled={step === 'busy'}>{step === 'busy' ? 'Setting up…' : 'Set up this phone'}</button>
+        <button className="blk primary" onClick={join} disabled={step === 'busy'}>{step === 'busy' ? 'Please wait…' : 'Set up this phone'}</button>
       </> : <>
         <div className="note">Welcome, <b>{who?.name}</b> ({who?.role}). Choose a 4-number PIN. You type it every time you open the app.</div>
         <label className="lbl" htmlFor="j-pin">New PIN</label>

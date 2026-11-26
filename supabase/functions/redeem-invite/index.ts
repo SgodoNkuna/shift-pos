@@ -20,12 +20,12 @@ Deno.serve(async req => {
   const admin = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!, { auth: { persistSession: false } })
   const { data: inv } = await admin.from('invites').select('token, staff_id, expires_at, used_at').eq('token', token).maybeSingle()
   if (!inv) return reply(404, { error: 'This invite link is not valid.' })
-  if (inv.used_at) return reply(410, { error: 'This invite link was already used. Ask the manager for a new one.' })
   if (new Date(inv.expires_at) < new Date()) return reply(410, { error: 'This invite link has expired. Ask the manager for a new one.' })
-
-  // Claim the invite first so it can only ever be used once.
-  const { data: claimed } = await admin.from('invites').update({ used_at: new Date().toISOString() }).eq('token', token).is('used_at', null).select('token')
-  if (!claimed?.length) return reply(410, { error: 'This invite link was already used.' })
+  // An invite stays usable until the person has saved a PIN, so a setup that was interrupted
+  // (app closed, opened in another browser) can be finished with the same link.
+  const { data: hasPin } = await admin.rpc('staff_has_pin', { p_staff: inv.staff_id })
+  if (inv.used_at && hasPin) return reply(410, { error: 'This invite link was already used. Ask the manager for a new one.' })
+  await admin.from('invites').update({ used_at: new Date().toISOString() }).eq('token', token)
 
   const { data: staff } = await admin.from('staff').select('id, name, role, user_id, active').eq('id', inv.staff_id).single()
   if (!staff?.active) return reply(403, { error: 'This person is not active.' })

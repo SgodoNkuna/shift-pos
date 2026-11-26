@@ -75,7 +75,8 @@ function Shell() {
     </div>)
 
   let body
-  if (joinToken && !me) body = <Join token={joinToken} onDone={m => { setDeviceId(m.id); setMe(m) }} />
+  const unfinished = !!deviceId && staff.length > 0 && !staff.find(s => s.id === deviceId)?.pinHash
+  if ((joinToken || unfinished) && !me) body = <Join token={joinToken} onDone={m => { setDeviceId(m.id); setMe(m) }} />
   else if (staffCount === 0) body = supabase || DEMO_ONLY ? <Welcome onDemo={() => void startDemo()} /> : <Setup onDone={setMe} />
   else if (!me) body = (
     <div className="main enter"><div className="pad stack pinwrap">
