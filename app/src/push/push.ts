@@ -43,7 +43,7 @@ export async function turnOnAlerts(staffId: string): Promise<AlertState> {
 }
 
 /** Buzzes this person's phones once so they know alerts work. */
-export async function sendTestAlert(): Promise<{ sent: number }> {
+export async function sendTestAlert(): Promise<{ sent: number; gone: number; failed: number }> {
   const { data } = await supabase!.auth.getSession()
   const res = await fetch(`${SUPABASE_URL}/functions/v1/notify`, {
     method: 'POST', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${data.session?.access_token ?? ''}`, 'Content-Type': 'application/json' }, body: '{}',

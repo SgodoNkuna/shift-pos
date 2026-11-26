@@ -14,6 +14,7 @@ export function AlertsCard({ me, compact = false }: { me: StaffMember; compact?:
   const toast = useToast()
   const [st, setSt] = useState<AlertState | null>(null)
   const [busy, setBusy] = useState(false)
+  const [note, setNote] = useState<string | null>(null)
   useEffect(() => { void alertState().then(setSt) }, [])
   if (st === null || (compact && (st === 'on' || st === 'unsupported' || st === 'needs-account'))) return null
   const on = async () => {
@@ -23,7 +24,12 @@ export function AlertsCard({ me, compact = false }: { me: StaffMember; compact?:
   }
   const test = async () => {
     setBusy(true)
-    try { const r = await sendTestAlert(); toast(r.sent ? 'Test alert sent' : 'No phone found. Turn alerts on again.') }
+    try {
+      const r = await sendTestAlert()
+      setNote(r.sent ? 'Sent. Google accepted it for this phone. If nothing pops up within a minute, Android is hiding it: long-press the Hash Lounge icon → App info → Notifications → Allow (and check Chrome’s notifications are on).'
+        : r.gone ? 'This phone’s alert registration had expired and was removed. Tap Turn on alerts again.' : 'No phone with alerts found for you. Tap Turn on alerts.')
+      if (!r.sent) setSt('off')
+    }
     catch { toast('Could not send a test. Check the internet.') } finally { setBusy(false) }
   }
   return (
@@ -31,6 +37,7 @@ export function AlertsCard({ me, compact = false }: { me: StaffMember; compact?:
       <b>{st === 'on' ? 'Alerts are on' : 'Turn on alerts'}</b>
       <span>{WHY[me.role]}</span>
       {st === 'off' && <button className="blk sm primary" disabled={busy} onClick={on}>Turn on alerts</button>}
+      {note && <span className="small">{note}</span>}
       {st === 'on' && <button className="blk sm" disabled={busy} onClick={test}>Send me a test alert</button>}
       {st === 'blocked' && <span>Alerts are blocked for this app. Open your phone’s <b>Settings → Notifications</b> (or the browser’s site settings), allow Hash Lounge, then come back.</span>}
       {st === 'install-first' && <span>On iPhone, alerts only work from the Home Screen: tap the <b>Share</b> button, then <b>Add to Home Screen</b>. Open Shift POS from there and turn alerts on.</span>}

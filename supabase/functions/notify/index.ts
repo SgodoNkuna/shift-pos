@@ -36,15 +36,21 @@ Deno.serve(async req => {
 
   const { data: subs } = await admin.from('push_subscriptions').select('*').in('staff_id', [...new Set(alerts.map(a => a.staff_id))])
   let sent = 0, gone = 0, failed = 0
+  const results: { staff: string; service: string; status: number | string; tag: string }[] = []
   await Promise.all(alerts.flatMap(a => ((subs ?? []) as Sub[]).filter(s => s.staff_id === a.staff_id).map(async s => {
+    const service = new URL(s.endpoint).host
     try {
-      await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
+      const r = await webpush.sendNotification({ endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
         JSON.stringify({ title: a.title, body: a.body, tag: a.tag }), { TTL: 3600, urgency: 'high' })
-      sent++
+      sent++; results.push({ staff: a.staff_id, service, status: r.statusCode, tag: a.tag })
     } catch (e) {
       const code = (e as { statusCode?: number }).statusCode
+      results.push({ staff: a.staff_id, service, status: code ?? String((e as Error).message).slice(0, 80), tag: a.tag })
       if (code === 404 || code === 410) { await admin.from('push_subscriptions').delete().eq('endpoint', s.endpoint); gone++ } else failed++
     }
   })))
-  return reply(200, { due: alerts.length, sent, gone, failed })
+  // Keep a record of what the push service answered (test alerts and any failures), so delivery can be checked.
+  const keep = results.filter(r => r.tag === 'test' || r.status !== 201)
+  if (keep.length) await admin.from('audit').insert(keep.map(r => ({ by_staff: r.staff, action: r.tag === 'test' ? 'push_test' : 'push_failed', ref: r.tag, detail: r })))
+  return reply(200, { due: alerts.length, sent, gone, failed, results: results.map(r => ({ service: r.service, status: r.status })) })
 })

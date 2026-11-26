@@ -29,16 +29,24 @@ describe('pull', () => {
     expect(await db.sales.count()).toBe(0)
   })
 
+  test('if the shop no longer recognises this phone, nothing on the phone is touched', async () => {
+    await db.shifts.put(shift('mine2'))
+    await db.sales.put({ id: 's2', shiftId: 'mine2', at: '', by: 'me', lines: [], payments: [] })
+    await expect(pull(fakeSupabase({ staff: [] }), 'me')).rejects.toThrow('no longer signed in')
+    expect(await db.shifts.get('mine2')).toBeDefined()
+    expect(await db.sales.count()).toBe(1)
+  })
+
   test('a shift with unsent changes on this phone is kept', async () => {
     await db.shifts.put(shift('mine'))
     await db.outbox.add({ id: 'mine', table: 'shifts', op: 'upsert', row: {}, tries: 0, at: '' })
-    await pull(fakeSupabase({}), 'me')
+    await pull(fakeSupabase({ staff: [{ id: 'me', name: 'Me', role: 'employee', active: true }] }), 'me')
     expect(await db.shifts.get('mine')).toBeDefined()
   })
 
   test('a shift the server still has is kept and updated', async () => {
     await db.shifts.put(shift('kept'))
-    await pull(fakeSupabase({ shifts: [{ id: 'kept', kind: 'day', date: today, opened_by: 'me', opened_at: new Date().toISOString(), opening: {}, float_cents: 5000, counts: {} }] }), 'me')
+    await pull(fakeSupabase({ staff: [{ id: 'me', name: 'Me', role: 'employee', active: true }], shifts: [{ id: 'kept', kind: 'day', date: today, opened_by: 'me', opened_at: new Date().toISOString(), opening: {}, float_cents: 5000, counts: {} }] }), 'me')
     expect((await db.shifts.get('kept'))!.floatCents).toBe(5000)
   })
 })

@@ -40,6 +40,7 @@ function SyncLabel() {
   const text = s.mode === 'phone' ? 'On phone' : s.mode === 'online' ? (s.waiting ? `Sending ${s.waiting}` : 'Synced')
     : s.mode === 'offline' ? `Offline${s.waiting ? ` · ${s.waiting} waiting` : ''}` : 'Sync problem'
   const tip = s.mode === 'phone' ? 'Saved on this phone only.' : s.mode === 'online' ? 'Saved and shared with the boss.' : 'Saved on this phone. It sends when the internet is back.'
+  if (s.mode === 'signed-out') return <span className="net off bad" title="This phone is no longer signed in to the shop."><i style={{ background: 'var(--bad)' }} />Signed out</span>
   if (s.refused) return <span className="net off bad" title="The server refused a change. Tell the manager; it is listed in the change log on this phone."><i style={{ background: 'var(--bad)' }} />{s.refused} not saved</span>
   return <span className={`net ${s.mode === 'online' ? '' : 'off'}`} title={tip}><i />{text}</span>
 }
@@ -63,6 +64,8 @@ function Shell() {
   const pending = data?.moves.filter(m => m.kind === 'out' && m.status === 'pending').length ?? 0
   const signOut = () => { setMe(null); setReportId(null); setTab('sell'); setMenu(null); setLeadTill(false); setReports(false) }
   const lead = me != null && me.role !== 'employee'
+  const [signedOut, setSignedOut] = useState(false)
+  useEffect(() => onSync(s => setSignedOut(s.mode === 'signed-out')), [])
   const demo = useLiveQuery(() => getMeta<boolean>('demo', false), [], false)
 
   if (staffCount === undefined || deviceId === undefined) return null
@@ -109,6 +112,7 @@ function Shell() {
   return (
     <div className="shell">
       {bar}
+      {signedOut && <div className="banner" style={{ margin: '8px 16px', borderColor: 'var(--bad)', color: 'var(--bad)' }}><b>This phone was signed out of the shop.</b> Nothing is lost: your sales and counts stay on this phone. Ask the manager for a new setup link and open it on this phone.</div>}
       {body}
       {menu === 'menu' && me && <Sheet title="Menu" onClose={() => setMenu(null)}>
         {lead && <button className="blk" onClick={() => { setLeadTill(false); setReportId(null); setReports(false); setMenu(null) }}>Overview</button>}

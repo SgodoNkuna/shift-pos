@@ -6,6 +6,8 @@ import { fromRow } from './map'
 
 type Row = Record<string, unknown>
 
+export class SignedOutError extends Error { constructor() { super('This phone is no longer signed in to the shop') } }
+
 /** Brings the server's view into this phone, without overwriting anything still waiting to be sent. */
 export async function pull(sb: SupabaseClient, meId: string): Promise<void> {
   const waiting = new Set((await db.outbox.toArray()).map(e => e.id))
@@ -20,6 +22,9 @@ export async function pull(sb: SupabaseClient, meId: string): Promise<void> {
     sb.from('product_costs').select('product_id, cents'), // empty unless this is the boss
   ])
   for (const r of [staff, products, settings, shifts]) if (r.error) throw r.error
+  // If the shop does not recognise this phone (its account moved to another phone), it sees nothing.
+  // Never treat that as "everything was deleted": stop here and leave this phone's data alone.
+  if (!(staff.data as Row[]).some(s => s.id === meId)) throw new SignedOutError()
 
   const mine = await db.staff.get(meId)
   const people: StaffMember[] = (staff.data as Row[]).filter(s => s.active).map(s => {
