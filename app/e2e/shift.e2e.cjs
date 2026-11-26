@@ -47,7 +47,7 @@ const [, , URL = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await btn('In').click(); await p.getByLabel('Product').selectOption('coke')
     await btn('+12').click(); await btn('+12').click(); await btn('Add to stock').click()
     await btn('Sell').click(); await p.getByRole('tab', { name: 'Drinks' }).click()
-    await p.getByRole('button', { name: /^Coke, R25, 29 left/ }).waitFor()
+    await p.getByRole('button', { name: /^Coke, R20, 29 left/ }).waitFor()
   })
   await step('stock out 0.5 g Martian F → pending, manager approves with PIN', async () => {
     await btn('Out').click(); await p.getByLabel('Product').selectOption('martian'); await btn('Given to boss').click()
