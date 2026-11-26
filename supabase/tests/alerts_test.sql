@@ -10,6 +10,8 @@ begin
   insert into staff (name, role) values ('T Man','manager') returning id into m;
   insert into staff (name, role) values ('T Boss','boss') returning id into b;
   -- Real staff are in the table too; count only the test people.
+  -- Real open shifts may exist; let these tests open their own.
+  update settings set value = 'true' where key = 'multi_seller';
   insert into products values ('t_martian','Martian F','main','g',0.5,1,15000,true,99) on conflict do nothing;
   insert into shifts (id,kind,date,opened_by,opened_at) values (s1,'night','2026-11-28',e,t0 - interval '2 hours');
   insert into shifts (id,kind,date,opened_by,opened_at,locked_at,pin_out_by,pin_in_by,cash_counted_cents,card_slip_cents,counts)

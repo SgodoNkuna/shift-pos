@@ -5,7 +5,7 @@ import { hashPin } from '../../auth/pin'
 import type { StaffMember } from '../../data/db'
 import { deviceStaffId, supabase, SUPABASE_KEY, SUPABASE_URL } from '../../sync/client'
 import { syncNow } from '../../sync/engine'
-import { DEMO_ONLY, SHOP } from '../../app/brand'
+import { DEMO_ALLOWED, DEMO_ONLY, SHOP } from '../../app/brand'
 
 const hex = (n: number) => [...crypto.getRandomValues(new Uint8Array(n))].map(b => b.toString(16).padStart(2, '0')).join('')
 
@@ -85,11 +85,11 @@ export function Welcome({ onDemo }: { onDemo: () => void }) {
       {DEMO_ONLY ? <div className="note">This is a demo of the shift app: a till, stock count and shift report. Everything stays in this page.</div> : <>
         <div className="note">Open the <b>invite link</b> the manager sent you on WhatsApp. It sets up this phone for you.</div>
         <p className="muted small">No link? Ask the manager or the boss to send you one from the app (Menu → People).</p></>}
-      <div className="block">
+      {DEMO_ALLOWED && <div className="block">
         <b>Just looking?</b>
         <span className="muted small">The demo has the shop's products and four people to sign in as. Nothing you do reaches the real shop.</span>
         <button className="blk" onClick={onDemo}>Try the demo</button>
-      </div>
+      </div>}
     </div></div>
   )
 }

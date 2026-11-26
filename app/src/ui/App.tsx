@@ -90,7 +90,7 @@ function Shell() {
   else if (lead && !leadTill && !(open && open.openedBy === me.id))
     body = <Overview me={me} onStartShift={() => setLeadTill(true)} onOpenReport={id => setReportId(id)} onReports={() => setReports(true)} />
   else if (!open) body = <ClockIn me={me} />
-  else if (open.openedBy !== me.id && me.role === 'employee') body = (
+  else if (open.openedBy !== me.id && !open.helpers?.includes(me.id) && me.role === 'employee') body = (
     <div className="main"><div className="pad stack">
       <div className="banner warnb">{staff.find(s => s.id === open.openedBy)?.name ?? 'Someone'}’s shift is still open. They clock out first, with you there to count and enter your PIN.</div>
       <button className="blk" onClick={signOut}>Sign out</button></div></div>)

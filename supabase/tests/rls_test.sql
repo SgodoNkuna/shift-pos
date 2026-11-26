@@ -16,6 +16,8 @@ begin
   insert into public.staff (user_id,name,role) values (e2,'Employee B','employee') returning id into se2;
   insert into public.staff (user_id,name,role) values (m,'Manager','manager') returning id into sm;
   insert into public.staff (user_id,name,role) values (b,'Boss','boss') returning id into sb;
+  -- Real open shifts may exist; let these tests open their own.
+  update settings set value = 'true' where key = 'multi_seller';
   insert into products values ('t_supercheese','Super Cheese','main','ea',1,3,3000,true);
   insert into product_costs (product_id,cents) values ('t_supercheese',1400);
   insert into shifts (id,kind,date,opened_by,opened_at,opening,float_cents) values (s1,'night','2026-11-28',se,now(),'{"t_supercheese":25}',20000);
@@ -72,7 +74,14 @@ begin
     (42,'manager can change a product price', 'm', $q$update products set price_cents=3500 where id='t_supercheese'$q$, 'ok'),
     (43,'manager cannot set cost prices', 'm', $q$insert into product_costs (product_id,cents) values ('t_supercheese',1500) on conflict (product_id) do update set cents=excluded.cents$q$, 'deny'),
     (44,'boss can set cost prices', 'b', $q$insert into product_costs (product_id,cents) values ('t_supercheese',1500) on conflict (product_id) do update set cents=excluded.cents$q$, 'ok'),
-    (45,'employee cannot change settings or float', 'e', $q$update settings set value='20000' where key='float_cents'$q$, 'deny')
+    (45,'employee cannot change settings or float', 'e', $q$update settings set value='20000' where key='float_cents'$q$, 'deny'),
+    (46,'boss switches several-sellers off', 'b', $q$update settings set value='false' where key='multi_seller'$q$, 'ok'),
+    (47,'a second open shift is refused', 'e2', format($q$insert into shifts (id,kind,date,opened_by,opened_at) values (gen_random_uuid(),'day','2026-11-30',%L,now())$q$, se2), 'deny'),
+    (48,'the clock-in screen is told whose shift is open', 'e2', $q$select count(*) from (select public.open_shift_owner() o) x where o is not null$q$, 'n=1'),
+    (49,'a second employee joins the open shift', 'e2', $q$select count(*) from (select public.join_open_shift() j) x where j is not null$q$, 'n=1'),
+    (50,'the helper can now sell into that shift', 'e2', format($q$insert into sales select gen_random_uuid(), j, now(), %L, '[]', '[]', null from (select public.join_open_shift() j) x$q$, se2), 'ok'),
+    (51,'a normal shift update cannot remove the helper', 'e', $q$update shifts set helpers = '{}' where locked_at is null and opened_by = private.my_staff_id()$q$, 'ok'),
+    (52,'the helper is still on the shift', 'e2', $q$select count(*) from shifts where locked_at is null and private.my_staff_id() = any(helpers)$q$, 'n=1')
   ) as t(no,label,who,sql,expect) order by no
   loop
     execute 'reset role';

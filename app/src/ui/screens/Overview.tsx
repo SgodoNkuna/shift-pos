@@ -35,7 +35,7 @@ export function Overview({ me, onStartShift, onOpenReport, onReports }: { me: St
           <button className="blk sm" onClick={() => onOpenReport(last.id)}>Open that report</button></div>}
         {open && data && t ? <>
           <div className="req"><div className="top"><b>{open.kind === 'day' ? 'Day' : 'Night'} shift · {open.date}</b><span className="pill done">open</span></div>
-            <div className="muted small">{name(open.openedBy)} since {time(open.openedAt)}</div></div>
+            <div className="muted small">{[open.openedBy, ...(open.helpers ?? [])].map(name).join(' + ')} since {time(open.openedAt)}</div></div>
           <div className="two">
             <div className="block"><div className="lbl">Sales so far</div><b className="num" style={{ fontSize: 26, color: 'var(--accent)' }}>{formatRand(t.salesCents)}</b></div>
             <div className="block"><div className="lbl">Waiting on you</div><b className="num" style={{ fontSize: 26, color: pending.length ? 'var(--wait)' : 'var(--muted)' }}>{pending.length}</b></div>

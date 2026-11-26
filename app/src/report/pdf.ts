@@ -22,7 +22,7 @@ export function buildPdf(d: ShiftData, names: Names = {}, logoDataUrl?: string):
   doc.setTextColor(0, 0, 0); doc.setFontSize(16)
   doc.text(`${kind.toUpperCase()} SHIFT  ${d.shift.date}`, 14, 16)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9)
-  doc.text(safe(`${n(d.shift.openedBy)} -> ${n(d.shift.pinInBy)}   Locked ${d.shift.lockedAt ? new Date(d.shift.lockedAt).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) : 'NO'}`), 14, 22)
+  doc.text(safe(`${[d.shift.openedBy, ...(d.shift.helpers ?? [])].map(n).join(' + ')} -> ${n(d.shift.pinInBy)}   Locked ${d.shift.lockedAt ? new Date(d.shift.lockedAt).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) : 'NO'}`), 14, 22)
   if (logoDataUrl) doc.addImage(logoDataUrl, 'PNG', 180, 4, 16, 16)
   doc.setLineWidth(0.6); doc.line(14, 24, 196, 24)
 

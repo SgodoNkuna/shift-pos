@@ -49,7 +49,7 @@ export function Report({ data, me, onDone, autoSend = false }: { data: ShiftData
         <div className="paper">
           <div className="small" style={{ marginBottom: 4 }}>{SHOP.name} · {SHOP.address}</div>
           <div className="ph"><div><h4>{s.kind === 'day' ? 'Day' : 'Night'} shift · {s.date}</h4>
-            <div>{names[s.openedBy]} → {names[s.pinInBy ?? ''] ?? '—'}</div></div>
+            <div>{[s.openedBy, ...(s.helpers ?? [])].map(id => names[id] ?? '?').join(' + ')} → {names[s.pinInBy ?? ''] ?? '—'}</div></div>
             <div style={{ textAlign: 'right' }}>{s.lockedAt ? 'LOCKED' : 'OPEN'}<br />{s.sentAt ? 'SENT' : 'NOT SENT'}</div></div>
           <div className="scrollx"><table className="ptable">
             <thead><tr>{['Product', 'Price', 'Open', 'In', 'Out', 'Close', 'Sold', 'Sales R', 'Stock R', 'Diff'].map(h => <th key={h}>{h}</th>)}</tr></thead>

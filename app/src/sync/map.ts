@@ -5,7 +5,7 @@ type Row = Record<string, unknown>
 const FIELDS: Record<SyncTable, [string, string][]> = {
   shifts: [['id', 'id'], ['kind', 'kind'], ['date', 'date'], ['openedBy', 'opened_by'], ['openedAt', 'opened_at'], ['opening', 'opening'], ['openingChanges', 'opening_changes'],
     ['floatCents', 'float_cents'], ['counts', 'counts'], ['cashCountedCents', 'cash_counted_cents'], ['cardSlipCents', 'card_slip_cents'],
-    ['pinOutBy', 'pin_out_by'], ['pinInBy', 'pin_in_by'], ['lockedAt', 'locked_at'], ['sentAt', 'sent_at']],
+    ['pinOutBy', 'pin_out_by'], ['pinInBy', 'pin_in_by'], ['lockedAt', 'locked_at'], ['sentAt', 'sent_at'], ['helpers', 'helpers']],
   sales: [['id', 'id'], ['shiftId', 'shift_id'], ['at', 'at'], ['by', 'by_staff'], ['lines', 'lines'], ['payments', 'payments'], ['void', 'void']],
   moves: [['id', 'id'], ['shiftId', 'shift_id'], ['productId', 'product_id'], ['qty', 'qty'], ['kind', 'kind'], ['status', 'status'], ['reason', 'reason'],
     ['by', 'by_staff'], ['at', 'at'], ['decidedBy', 'decided_by'], ['decidedAt', 'decided_at'], ['escalatedAt', 'escalated_at']],
@@ -19,7 +19,8 @@ export function toRow(table: SyncTable, obj: unknown): Row {
   const o = obj as Row
   const r: Row = {}
   for (const [f, c] of FIELDS[table]) r[c] = o[f] === undefined ? null : o[f]
-  if (table === 'shifts') { r.counts ??= {}; r.opening ??= {} }
+  // Helpers are only changed on the server (join_open_shift), never sent from a phone.
+  if (table === 'shifts') { r.counts ??= {}; r.opening ??= {}; delete r.helpers }
   return r
 }
 

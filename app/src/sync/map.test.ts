@@ -24,6 +24,10 @@ describe('toRow / fromRow', () => {
     expect(row.card_slip_cents).toBe(20000)
     expect(fromRow('shifts', row)).toEqual(s)
   })
+  test('helpers are received from the server but never sent from a phone', () => {
+    expect('helpers' in toRow('shifts', { ...d.shift, helpers: ['b'] })).toBe(false)
+    expect(fromRow<{ helpers: string[] }>('shifts', { ...toRow('shifts', d.shift), helpers: ['b'] }).helpers).toEqual(['b'])
+  })
   test('a product keeps its sort order and numeric step', () => {
     const p = d.products[4]
     expect(fromRow('products', { ...toRow('products', p) as object, step: '0.5', low_at: '1.0' })).toEqual(p)

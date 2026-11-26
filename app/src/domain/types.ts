@@ -52,6 +52,8 @@ export interface Shift {
   kind: 'day' | 'night'
   date: string
   openedBy: string
+  /** Others working the same shift (joined from their own phone). */
+  helpers?: string[]
   openedAt: string
   opening: Record<string, number>
   /** Opening counts changed at clock in: what the last shift handed over, what was really there, and who changed it. */

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { actions, db, getMeta, nextOpening } from '../../app/store'
 import type { StaffMember } from '../../data/db'
@@ -6,7 +6,8 @@ import { displayName } from '../../domain/calc'
 import { formatQty, formatRand, parseQty, shiftFor } from '../../domain/num'
 import { catLabel, Header, useToast } from '../kit'
 import { AlertsCard } from '../Alerts'
-import { supabase } from '../../sync/client'
+import { deviceStaffId, supabase } from '../../sync/client'
+import { syncNow } from '../../sync/engine'
 import { categoryOrder, sortProducts } from '../../domain/order'
 
 export function ClockIn({ me }: { me: StaffMember }) {
@@ -16,6 +17,22 @@ export function ClockIn({ me }: { me: StaffMember }) {
   const floatCents = useLiveQuery(() => getMeta<number>('floatCents', 0), [], 0)
   const { kind, date } = shiftFor(new Date())
   const cats = categoryOrder(products)
+  const [otherOpen, setOtherOpen] = useState<string | null>(null)
+  // Only one shift at a time: say whose shift is still open instead of starting a second one.
+  useEffect(() => { void (async () => {
+    if (!supabase || !(await deviceStaffId())) return
+    const { data } = await supabase.rpc('open_shift_owner')
+    setOtherOpen((data as string | null) ?? null)
+  })() }, [])
+  const [joining, setJoining] = useState(false)
+  const join = async () => {
+    setJoining(true)
+    try {
+      const { error } = await supabase!.rpc('join_open_shift')
+      if (error) { toast('Could not join. Check the internet.'); return }
+      await syncNow(); toast(`Joined ${otherOpen}’s shift`)
+    } finally { setJoining(false) }
+  }
   const [fixing, setFixing] = useState(false)
   const [fix, setFix] = useState<Record<string, number>>({})
   const changed = Object.entries(fix).filter(([id, v]) => v !== (next?.opening[id] ?? 0))
@@ -47,7 +64,10 @@ export function ClockIn({ me }: { me: StaffMember }) {
           </div>))}
         <div className="row big"><span>Cash float in the drawer</span><b className="num">{formatRand(floatCents)}</b></div>
         {changed.length > 0 && <div className="banner warnb">{changed.length} count{changed.length > 1 ? 's' : ''} changed. This goes on the shift report with your name.</div>}
-        <button className="blk primary" onClick={start} disabled={!next}>Confirm &amp; start shift</button>
+        {otherOpen && <div className="banner warnb"><b>{otherOpen}’s shift is still open.</b>
+          Working together now? Join it and you both sell into the same shift. Taking over? Count together, {otherOpen} locks it with your PIN, then clock in.
+          <button className="blk sm primary" disabled={joining} onClick={join}>Join {otherOpen}’s shift</button></div>}
+        <button className="blk primary" onClick={start} disabled={!next || !!otherOpen}>Confirm &amp; start shift</button>
         <button className="blk ghost" onClick={() => setFixing(!fixing)}>{fixing ? 'Done correcting' : 'Correct a count'}</button>
       </div>
     </div>

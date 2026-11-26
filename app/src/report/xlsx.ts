@@ -19,7 +19,7 @@ export async function buildXlsxBuffer(d: ShiftData, names: Names = {}): Promise<
   sum.columns = [{ header: 'Item', width: 26 }, { header: 'Value', width: 22 }]
   sum.addRows([
     ['Shift', d.shift.kind === 'day' ? 'Day' : 'Night'], ['Date', d.shift.date],
-    ['Opened by', n(d.shift.openedBy)], ['Handed over to', n(d.shift.pinInBy)],
+    ['Opened by', n(d.shift.openedBy)], ['Also on shift', (d.shift.helpers ?? []).map(n).join(', ')], ['Handed over to', n(d.shift.pinInBy)],
     ['Locked at', d.shift.lockedAt ?? ''], ['Total sales (R)', R(t.salesCents)], ['Card sales (R)', R(t.cardCents)],
     ['Cash sales (R)', R(t.cashCents)], ['Expenses (R)', R(t.expensesCents)], ['Float (R)', R(d.shift.floatCents)],
     ['Expected cash (R)', R(t.expectedCashCents)], ['Counted cash (R)', R(d.shift.cashCountedCents)], ['Cash difference (R)', R(t.cashDiffCents)],
