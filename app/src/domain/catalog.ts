@@ -1,4 +1,4 @@
-// Generated from the 26 November shift sheets. Stoney and Water prices were not on the sheet (set R20 / R15; change in Products & prices).
+// Generated from the 26 November shift sheets. Cooldrinks R25 (owner, 26 Nov). Water price not confirmed (R15).
 import type { Product } from './types'
 
 export const CATALOG: Product[] = [
@@ -14,9 +14,9 @@ export const CATALOG: Product[] = [
   { id: 'grapeballs', name: 'Grape Balls', categoryId: 'main', unit: 'g', step: 0.5, lowAt: 1, priceCents: 15000, active: true, sort: 10 },
   { id: 'gummies', name: 'Gummies', categoryId: 'main', unit: 'ea', step: 1, lowAt: 3, priceCents: 3000, active: true, sort: 11 },
   { id: 'kings', name: 'Kings', categoryId: 'main', unit: 'ea', step: 1, lowAt: 3, priceCents: 25000, active: true, sort: 12 },
-  { id: 'coke', name: 'Coke', categoryId: 'drinks', unit: 'ea', step: 1, lowAt: 3, priceCents: 2000, active: true, sort: 13 },
-  { id: 'sprite', name: 'Sprite', categoryId: 'drinks', unit: 'ea', step: 1, lowAt: 3, priceCents: 2000, active: true, sort: 14 },
-  { id: 'stoney', name: 'Stoney', categoryId: 'drinks', unit: 'ea', step: 1, lowAt: 3, priceCents: 2000, active: true, sort: 15 },
+  { id: 'coke', name: 'Coke', categoryId: 'drinks', unit: 'ea', step: 1, lowAt: 3, priceCents: 2500, active: true, sort: 13 },
+  { id: 'sprite', name: 'Sprite', categoryId: 'drinks', unit: 'ea', step: 1, lowAt: 3, priceCents: 2500, active: true, sort: 14 },
+  { id: 'stoney', name: 'Stoney', categoryId: 'drinks', unit: 'ea', step: 1, lowAt: 3, priceCents: 2500, active: true, sort: 15 },
   { id: 'monster', name: 'Monster', categoryId: 'drinks', unit: 'ea', step: 1, lowAt: 3, priceCents: 2500, active: true, sort: 16 },
   { id: 'powerade', name: 'Powerade', categoryId: 'drinks', unit: 'ea', step: 1, lowAt: 3, priceCents: 2500, active: true, sort: 17 },
   { id: 'water', name: 'Water', categoryId: 'drinks', unit: 'ea', step: 1, lowAt: 3, priceCents: 1500, active: true, sort: 18 },
