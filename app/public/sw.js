@@ -1,5 +1,5 @@
 // Hash Cannabis Lounge background helper: opens the app without signal, and shows alerts.
-const CACHE = 'shiftpos-v3'
+const CACHE = 'shiftpos-v4'
 
 self.addEventListener('install', e => {
   self.skipWaiting()
@@ -39,10 +39,16 @@ self.addEventListener('fetch', e => {
 self.addEventListener('push', e => {
   let d = { title: 'Hash Lounge', body: '', tag: 'shiftpos' }
   try { d = { ...d, ...e.data.json() } } catch { /* plain message */ }
-  e.waitUntil(self.registration.showNotification(d.title, {
-    body: d.body, tag: d.tag, renotify: true, icon: '/icon-192.png', badge: '/icon-192.png',
-    vibrate: [300, 120, 300, 120, 300], requireInteraction: String(d.tag).startsWith('out-'),
-  }))
+  const urgent = String(d.tag).startsWith('out-')
+  e.waitUntil(Promise.all([
+    self.registration.showNotification(d.title, {
+      body: d.body, tag: d.tag, renotify: true, icon: '/alert-192.png', badge: '/badge-96.png',
+      // Stock out waiting: three long buzzes. Everything else: two short ones.
+      vibrate: urgent ? [400, 150, 400, 150, 400] : [180, 100, 180], requireInteraction: urgent,
+    }),
+    // If the app is open, it also slides the alert down on screen.
+    self.clients.matchAll({ type: 'window' }).then(ws => ws.forEach(w => w.postMessage({ type: 'alert', title: d.title, body: d.body }))),
+  ]))
 })
 
 self.addEventListener('notificationclick', e => {

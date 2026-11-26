@@ -63,7 +63,7 @@ export function Sell({ data, me }: { data: ShiftData; me: StaffMember }) {
       </div>
       {paying && <PaySheet total={total} mode0={paying} onClose={() => setPaying(null)} onPay={async payments => {
         await actions.recordSale(data.shift.id, me.id, basket, payments)
-        setBasket([]); setPaying(null); toast('Sale recorded')
+        setBasket([]); setPaying(null); toast('Sale recorded'); navigator.vibrate?.(35)
       }} />}
     </div>
   )

@@ -3,7 +3,7 @@ import { db } from '../../app/store'
 import type { StaffMember } from '../../data/db'
 import { shiftTotals } from '../../domain/calc'
 import { formatRand } from '../../domain/num'
-import { Header, saleCents, sellerColor, ShiftStrip, useShiftData, useStaff } from '../kit'
+import { CountUp, Header, saleCents, sellerColor, ShiftStrip, useShiftData, useStaff } from '../kit'
 import { OutCard } from './StockOut'
 import { AlertsCard } from '../Alerts'
 import { supabase } from '../../sync/client'
@@ -38,10 +38,10 @@ export function Overview({ me, onStartShift, onOpenReport, onReports }: { me: St
             <div className="muted small">{[open.openedBy, ...(open.helpers ?? [])].map(name).join(' + ')} since {time(open.openedAt)}</div></div>
           <ShiftStrip data={data} flush />
           <div className="two">
-            <div className="block"><div className="lbl">Sales so far</div><b className="num" style={{ fontSize: 26, color: 'var(--accent)' }}>{formatRand(t.salesCents)}</b></div>
+            <div className="block"><div className="lbl">Sales so far</div><b className="num" style={{ fontSize: 26, color: 'var(--accent)' }}><CountUp cents={t.salesCents} /></b></div>
             <div className="block"><div className="lbl">Waiting on you</div><b className="num" style={{ fontSize: 26, color: pending.length ? 'var(--wait)' : 'var(--muted)' }}>{pending.length}</b></div>
-            <div className="block"><div className="lbl">Card</div><b className="num">{formatRand(t.cardCents)}</b></div>
-            <div className="block"><div className="lbl">Cash</div><b className="num">{formatRand(t.cashCents)}</b></div>
+            <div className="block"><div className="lbl">Card</div><b className="num"><CountUp cents={t.cardCents} /></b></div>
+            <div className="block"><div className="lbl">Cash</div><b className="num"><CountUp cents={t.cashCents} /></b></div>
           </div>
           {pending.map(m => <OutCard key={m.id} m={m} data={data} me={me} />)}
           <div className="lbl">Activity</div>

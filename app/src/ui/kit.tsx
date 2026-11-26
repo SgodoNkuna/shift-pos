@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type ReactNode } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, actions } from '../app/store'
 import { supabase } from '../sync/client'
@@ -13,10 +13,12 @@ const ToastCtx = createContext<(msg: string) => void>(() => {})
 export const useToast = () => useContext(ToastCtx)
 export function ToastHost({ children }: { children: ReactNode }) {
   const [t, setT] = useState<{ msg: string; k: number } | null>(null)
+  useEffect(() => { if (!t) return; const id = setTimeout(() => setT(null), 2100); return () => clearTimeout(id) }, [t])
   return (
     <ToastCtx.Provider value={msg => setT({ msg, k: Date.now() })}>
       {children}
-      {t && <div className="toast" key={t.k} role="status" onAnimationEnd={() => setT(null)}>{t.msg}</div>}
+      {t && <div className="toast" key={t.k} role="status">{t.msg}</div>}
+      <AlertDrop />
     </ToastCtx.Provider>
   )
 }
@@ -133,18 +135,69 @@ export function ShiftStrip({ data, meId, flush }: { data: ShiftData; meId?: stri
   const total = data.sales.filter(s => !s.void).reduce((a, s) => a + saleCents(s), 0)
   const full = (id: string) => staff.find(s => s.id === id)?.name ?? '?'
   const firsts = people.map(id => full(id).split(' ')[0])
+  const [pops, setPops] = useState<{ id: string; cents: number; k: number }[]>([])
+  const prev = useRef<Record<string, number> | null>(null)
+  const sums = Object.fromEntries(people.map(id => [id, sold(id)]))
+  const key = JSON.stringify(sums)
+  useEffect(() => {
+    const before = prev.current; prev.current = sums
+    if (!before) return
+    const fresh = people.filter(id => sums[id] > (before[id] ?? 0)).map(id => ({ id, cents: sums[id] - (before[id] ?? 0), k: Date.now() + Math.random() }))
+    if (!fresh.length) return
+    setPops(p => [...p, ...fresh])
+    const t = setTimeout(() => setPops(p => p.filter(x => !fresh.includes(x))), 1800)
+    return () => clearTimeout(t)
+  }, [key]) // eslint-disable-line react-hooks/exhaustive-deps
   const first = (id: string) => { const f = full(id).split(' ')[0]; return firsts.filter(x => x === f).length > 1 ? full(id) : f }
   return (
     <div className="strip" style={flush ? { margin: 0 } : undefined} aria-label="People on this shift">
       <div className="strip-top">
         <span className="lbl">{data.shift.kind === 'day' ? 'Day' : 'Night'} shift · {people.length > 1 ? `${people.length} people, one shift` : 'one person'}</span>
-        <b className="num">{formatRand(total)}</b>
+        <b className="num" key={total}>{formatRand(total)}</b>
       </div>
       <div className="strip-people">{people.map(id =>
-        <span key={id} className="seller" style={{ ['--c' as string]: sellerColor(data.shift, id) }}>
+        <span key={id} className={`seller${pops.some(p => p.id === id) ? ' hit' : ''}`} style={{ ['--c' as string]: sellerColor(data.shift, id) }}>
+          {pops.filter(p => p.id === id).map(p => <em key={p.k} className="plus num" aria-hidden="true">+{formatRand(p.cents)}</em>)}
           <i />{first(id)}{id === meId ? ' (you)' : ''}{id === data.shift.openedBy && people.length > 1 ? ' · opened' : ''}
           <b className="num">{formatRand(sold(id))}</b>
         </span>)}
       </div>
     </div>)
+}
+
+/** Counts smoothly up or down to a rand amount (instant for people who turn off motion). */
+export function CountUp({ cents }: { cents: number }) {
+  const [shown, setShown] = useState(cents)
+  const from = useRef(cents)
+  useEffect(() => {
+    const start = from.current, end = cents
+    if (start === end || matchMedia('(prefers-reduced-motion: reduce)').matches) { from.current = end; setShown(end); return }
+    let raf = 0; const t0 = performance.now()
+    const tick = (now: number) => {
+      const k = Math.min(1, (now - t0) / 700), e = 1 - Math.pow(1 - k, 3)
+      const v = Math.round(start + (end - start) * e); from.current = v; setShown(v)
+      if (k < 1) raf = requestAnimationFrame(tick)
+    }
+    raf = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(raf)
+  }, [cents])
+  return <>{formatRand(shown)}</>
+}
+
+/** An alert that arrives while the app is open slides down from the top with the logo. */
+function AlertDrop() {
+  const [a, setA] = useState<{ title: string; body: string; k: number } | null>(null)
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const on = (e: MessageEvent) => { if (e.data?.type === 'alert') setA({ title: e.data.title, body: e.data.body, k: Date.now() }) }
+    navigator.serviceWorker.addEventListener('message', on)
+    return () => navigator.serviceWorker.removeEventListener('message', on)
+  }, [])
+  useEffect(() => { if (!a) return; const id = setTimeout(() => setA(null), 5000); return () => clearTimeout(id) }, [a])
+  if (!a) return null
+  return (
+    <button className="drop" key={a.k} role="status" onClick={() => setA(null)}>
+      <img src="/alert-192.png" alt="" width={36} height={36} />
+      <span><b>{a.title}</b>{a.body && <span>{a.body}</span>}</span>
+    </button>)
 }
