@@ -64,28 +64,28 @@ export function buildPdf(d: ShiftData, names: Names = {}, logoDataUrl?: string, 
   y = heading('Shift summary', y)
   const cashOnHand = t.salesCents - t.cardCents - t.expensesCents
   const diff = (v: number | null) => (v == null ? '-' : v === 0 ? 'Matches' : `${v > 0 ? 'Over' : 'Short'} ${formatRand(Math.abs(v))}`)
-  const rows: [string, string, RGB?][] = [
-    ['Total sales', formatRand(t.salesCents)],
-    ['Card sales', formatRand(t.cardCents)],
+  // Short list in the paper sheet's words. Float only when there is one; card machine on one line when it matches.
+  const cardOk = t.cardDiffCents === 0
+  const rows: [string, string, RGB?, boolean?][] = [
+    ['Total sales', formatRand(t.salesCents), undefined, true],
+    [cardOk ? 'Card sales  (card machine matches)' : 'Card sales', formatRand(t.cardCents)],
+    ...(!cardOk ? [['Card machine slip', d.shift.cardSlipCents != null ? formatRand(d.shift.cardSlipCents) : '-'] as [string, string],
+      ['Card difference', diff(t.cardDiffCents), RED] as [string, string, RGB]] : []),
     ['Total expenses', formatRand(t.expensesCents)],
-    ['Cash on hand  (sales - card - expenses)', formatRand(cashOnHand)],
-    ['Float in the drawer at the start', formatRand(d.shift.floatCents)],
-    ['Cash that should be in the drawer', formatRand(t.expectedCashCents)],
+    ['Cash on hand', formatRand(cashOnHand), undefined, true],
+    ...(d.shift.floatCents ? [['Plus float at the start', formatRand(d.shift.floatCents)] as [string, string]] : []),
     ['Cash counted', d.shift.cashCountedCents != null ? formatRand(d.shift.cashCountedCents) : '-'],
-    ['Cash difference', diff(t.cashDiffCents), t.cashDiffCents ? RED : GREEN],
-    ['Card machine slip', d.shift.cardSlipCents != null ? formatRand(d.shift.cardSlipCents) : '-'],
-    ['Card difference', diff(t.cardDiffCents), t.cardDiffCents ? RED : GREEN],
+    ['Cash difference', diff(t.cashDiffCents), t.cashDiffCents ? RED : GREEN, true],
   ]
   autoTable(doc, {
-    startY: y, theme: 'plain', margin: { left: M, right: M + 70 }, styles: { fontSize: 10, cellPadding: { top: 1.1, bottom: 1.1, left: 2, right: 2 }, textColor: INK },
+    startY: y, theme: 'plain', margin: { left: M, right: M + 70 }, styles: { fontSize: 10.5, cellPadding: { top: 1.4, bottom: 1.4, left: 2, right: 2 }, textColor: INK },
     body: rows.map(r => [safe(r[0]), safe(r[1])]),
     columnStyles: { 1: { halign: 'right', fontStyle: 'bold', cellWidth: 34 } },
     didParseCell: h => {
       const r = rows[h.row.index]
-      if (h.row.index === 0 || h.row.index === 3) { h.cell.styles.fontStyle = 'bold'; h.cell.styles.fillColor = ZEBRA }
+      if (r[3]) { h.cell.styles.fontStyle = 'bold'; h.cell.styles.fillColor = ZEBRA }
       if (r[2] && h.column.index === 1) h.cell.styles.textColor = r[2]
     },
-    didDrawCell: h => { if (h.column.index === 0 && (h.row.index === 4 || h.row.index === 8)) { doc.setDrawColor(...LINE); doc.setLineWidth(0.2); doc.line(M, h.cell.y, R - 70, h.cell.y) } },
   })
   // Big total, right of the summary
   const bx = R - 62, by = y
@@ -93,12 +93,13 @@ export function buildPdf(d: ShiftData, names: Names = {}, logoDataUrl?: string, 
   doc.setFont('helvetica', 'bold'); doc.setFontSize(8); color(MUTED); doc.text('TOTAL SALES', bx + 5, by + 7)
   doc.setFontSize(22); color(INK); doc.text(safe(formatRand(t.salesCents)), bx + 5, by + 18)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); color(MUTED)
-  doc.text(safe(`${d.sales.filter(s => !s.void).length} sales  ·  card ${formatRand(t.cardCents)}  ·  cash ${formatRand(t.cashCents)}`), bx + 5, by + 25)
+  doc.text(safe(`card ${formatRand(t.cardCents)}  ·  cash ${formatRand(t.cashCents)}`), bx + 5, by + 25)
   y = Math.max(lastY(), by + 30) + 6
 
   // ---------- Things to check ----------
   const flags = shiftFlags(d, names)
-  const issues = flags.filter(f => f.level === 'bad' || f.level === 'warn')
+  // Cash and card differences are already in the summary above.
+  const issues = flags.filter(f => (f.level === 'bad' || f.level === 'warn') && f.code !== 'cash_diff' && f.code !== 'card_diff')
   y = heading(issues.length ? `Things to check (${issues.length})` : 'Things to check', y)
   autoTable(doc, {
     startY: y, theme: 'plain', margin: { left: M, right: M }, styles: { fontSize: 9, cellPadding: { top: 1.2, bottom: 1.2, left: 3, right: 2 } },
@@ -154,13 +155,14 @@ export function buildPdf(d: ShiftData, names: Names = {}, logoDataUrl?: string, 
     ...d.moves.filter(m => m.kind === 'out').map(m => [clock(m.at), 'Stock out', `${formatQty(prod(m.productId), m.qty)} ${prod(m.productId).name}, ${m.reason ?? ''}: ${m.status}${m.decidedBy ? ` by ${n(m.decidedBy)}` : ''}`, n(m.by)]),
     ...d.expenses.map(e => [clock(e.at), 'Expense', `${formatRand(e.cents)} ${e.note}`, n(e.by)]),
     ...d.sales.filter(s => s.void).map(s => [clock(s.at), 'Voided sale', `${formatRand(Math.round(s.lines.reduce((a, l) => a + l.qty * l.unitCents, 0)))}: ${s.void!.reason}`, n(s.void!.by)]),
-  ].sort((a, b) => a[0].localeCompare(b[0])).map(r => r.map(safe))
+  ].sort((a, b) => a[0].localeCompare(b[0])).map(r => (source === 'paper' ? r.slice(1) : r).map(safe))
   if (logs.length) {
     if (y > 250) { doc.addPage(); y = 18 }
-    y = heading('Stock in, stock out, expenses and voids', y)
-    autoTable(doc, { startY: y, head: [['Time', 'What', 'Details', 'Who']], body: logs, margin: { left: M, right: M, bottom: 18 },
-      styles: { fontSize: 8.2, cellPadding: 1.1, lineColor: LINE, lineWidth: 0.1, textColor: INK }, headStyles: { fillColor: INK, textColor: [255, 255, 255] },
-      columnStyles: { 0: { cellWidth: 14 }, 1: { cellWidth: 24, fontStyle: 'bold' }, 3: { cellWidth: 34 } } })
+    y = heading('Stock in, stock out and expenses', y)
+    const timed = source !== 'paper'
+    autoTable(doc, { startY: y, head: [timed ? ['Time', 'What', 'Details', 'Who'] : ['What', 'Details', 'Who']], body: logs, margin: { left: M, right: M, bottom: 18 },
+      styles: { fontSize: 8.6, cellPadding: 1.2, lineColor: LINE, lineWidth: 0.1, textColor: INK }, headStyles: { fillColor: INK, textColor: [255, 255, 255] },
+      columnStyles: timed ? { 0: { cellWidth: 14 }, 1: { cellWidth: 24, fontStyle: 'bold' }, 3: { cellWidth: 34 } } : { 0: { cellWidth: 24, fontStyle: 'bold' }, 2: { cellWidth: 34 } } })
     y = lastY() + 6
   }
 
