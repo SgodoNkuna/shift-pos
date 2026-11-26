@@ -11,21 +11,26 @@
   "navigationColorDark": "#13171C",
   "navigationDividerColor": "#13171C",
   "navigationDividerColorDark": "#13171C",
-  "backgroundColor": "#0C0F12",
+  "backgroundColor": "#FFFFFF",
   "enableNotifications": true,
   "startUrl": "/",
   "iconUrl": "https://shift-pos.pages.dev/icon-512.png",
-  "maskableIconUrl": "https://shift-pos.pages.dev/icon-512.png",
+  "maskableIconUrl": "https://shift-pos.pages.dev/icon-maskable-512.png",
   "splashScreenFadeOutDuration": 300,
-  "signingKey": { "path": "./android.keystore", "alias": "hashlounge" },
-  "appVersionName": "1.0.0",
-  "appVersionCode": 1,
+  "signingKey": {
+    "path": "./android.keystore",
+    "alias": "hashlounge"
+  },
+  "appVersionName": "1.1.0",
+  "appVersionCode": 2,
   "shortcuts": [],
   "generatorApp": "bubblewrap-cli",
   "webManifestUrl": "https://shift-pos.pages.dev/manifest.webmanifest",
   "fallbackType": "customtabs",
   "features": {},
-  "alphaDependencies": { "enabled": false },
+  "alphaDependencies": {
+    "enabled": false
+  },
   "enableSiteSettingsShortcut": true,
   "isChromeOSOnly": false,
   "isMetaQuest": false,
@@ -34,5 +39,5 @@
   "fingerprints": [],
   "additionalTrustedOrigins": [],
   "retainedBundles": [],
-  "appVersion": "1.0.0"
+  "appVersion": "1.1.0"
 }
