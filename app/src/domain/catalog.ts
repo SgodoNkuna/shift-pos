@@ -29,10 +29,11 @@ export const CATALOG: Product[] = [
   { id: 'bejo', name: 'Bejo', categoryId: 'rolling', unit: 'ea', step: 1, lowAt: 3, priceCents: 3000, active: true, sort: 25 },
   { id: 'raw', name: 'Raw', categoryId: 'rolling', unit: 'ea', step: 1, lowAt: 3, priceCents: 4000, active: true, sort: 26 },
   { id: 'honeyp', name: 'Honey P', categoryId: 'rolling', unit: 'ea', step: 1, lowAt: 3, priceCents: 2000, active: true, sort: 27 },
+  { id: 'cones', name: 'Cones', categoryId: 'rolling', unit: 'ea', step: 1, lowAt: 10, priceCents: 200, active: true, sort: 28 },
   { id: 'eucalypto', name: 'Eucalypto', categoryId: 'main', unit: 'g', step: 0.5, lowAt: 1, priceCents: 10000, active: false, sort: 99 },
   { id: 'hubbly', name: 'Hubbly hire', categoryId: 'hubbly', unit: 'ea', step: 1, lowAt: 0, priceCents: 10000, active: true, track: false, sort: 100 },
   { id: 'hubblyrefill', name: 'Hubbly refill', categoryId: 'hubbly', unit: 'ea', step: 1, lowAt: 0, priceCents: 5000, active: true, track: false, sort: 101 },
 ]
 
 /** Opening stock from the 26 November day shift sheet. */
-export const CATALOG_OPENING: Record<string, number> = {'outdoor':  12,  'supercheese':  14,  'castro':  11,  'exodus':  7,  'icecream':  8,  'pinkink':  2,  'icecool':  5,  'cadillac':  3,  'martian':  4,  'grapeballs':  7,  'gummies':  0,  'kings':  3,  'coke':  5,  'sprite':  6,  'stoney':  6,  'monster':  5,  'powerade':  4,  'water':  9,  'lighter':  14,  'bluestar':  14,  'bobmarley':  4,  'limitless':  50,  'rizla30':  50,  'rizla20':  13,  'bejo':  12,  'raw':  12,  'honeyp':  2}
+export const CATALOG_OPENING: Record<string, number> = {'outdoor':  12,  'supercheese':  14,  'castro':  11,  'exodus':  7,  'icecream':  8,  'pinkink':  2,  'icecool':  5,  'cadillac':  3,  'martian':  4,  'grapeballs':  7,  'gummies':  0,  'kings':  3,  'coke':  5,  'sprite':  6,  'stoney':  6,  'monster':  5,  'powerade':  4,  'water':  9,  'lighter':  14,  'bluestar':  14,  'bobmarley':  4,  'limitless':  50,  'rizla30':  50,  'rizla20':  13,  'bejo':  12,  'raw':  12,  'honeyp':  2,  'cones':  40}
