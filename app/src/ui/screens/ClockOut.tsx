@@ -26,6 +26,7 @@ export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMem
   const staff = useStaff()
   const [pinFor, setPinFor] = useState<null | 'out' | 'in'>(null)
   const [counting, setCounting] = useState(false)
+  const [staying, setStaying] = useState(false)
   const lines = itemLines(data)
   const t = shiftTotals(data)
   const s = data.shift
@@ -101,7 +102,7 @@ export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMem
         <div className="lbl">Handover PINs</div>
         <div className="pins">
           <button className={`blk ${s.pinOutBy ? 'on' : ''}`} onClick={() => setPinFor('out')}><span>{name(s.pinOutBy) ?? me.name}</span><span className="small">{s.pinOutBy ? 'PIN ✓' : 'Going home · PIN'}</span></button>
-          <button className={`blk ${s.pinInBy ? 'on' : ''}`} onClick={() => setPinFor('in')}><span>{name(s.pinInBy) ?? 'Next person'}</span><span className="small">{s.pinInBy ? 'PIN ✓' : 'Starting · PIN'}</span></button>
+          <button className={`blk ${s.pinInBy ? 'on' : ''}`} onClick={() => setPinFor('in')}><span>{name(s.pinInBy) ?? 'Next person'}</span><span className="small">{s.pinInBy ? (s.pinInBy === s.pinOutBy ? 'Staying on ✓' : 'PIN ✓') : 'Starting · PIN'}</span></button>
         </div>
 
         {reasons.length > 0 && <ul className="small warn" style={{ margin: 0, paddingLeft: 18 }} aria-label="Before you can lock">
@@ -111,9 +112,15 @@ export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMem
 
       {counting && <CashCount expectedCents={t.expectedCashCents} onClose={() => setCounting(false)}
         onUse={async c => { await actions.setCash(id, c, me.id); setCounting(false); toast(`Cash ${formatRand(c)} entered`) }} />}
-      {pinFor && <Sheet title={pinFor === 'out' ? 'Your PIN' : 'Next person’s PIN'} onClose={() => setPinFor(null)}>
-        <PinPad people={pinFor === 'out' ? [me] : staff.filter(x => x.id !== me.id && !x.locked)} prompt="Who is starting the next shift?"
-          onOk={async m => { await actions.confirmPin(id, pinFor, m.id); setPinFor(null); toast('PIN ✓') }} />
+      {pinFor && <Sheet title={pinFor === 'out' ? 'Your PIN' : 'Next person’s PIN'} onClose={() => { setPinFor(null); setStaying(false) }}>
+        {pinFor === 'in' && s.pinOutBy === me.id && (staying
+          ? <div className="banner warnb"><b>Working the next shift too?</b>
+              <span>You will count alone, with no second person. The boss and manager get an alert, and the report says so.</span>
+              <button className="blk primary" onClick={async () => { await actions.confirmPin(id, 'in', me.id); setStaying(false); setPinFor(null); toast('Staying on ✓') }}>Yes, I’m staying on</button>
+              <button className="linkbtn" onClick={() => setStaying(false)}>No, someone else is starting</button></div>
+          : <button className="blk ghost" onClick={() => setStaying(true)}>It’s me: I’m working the next shift too</button>)}
+        {!staying && <PinPad people={pinFor === 'out' ? [me] : staff.filter(x => x.id !== me.id && !x.locked)} prompt="Who is starting the next shift?"
+          onOk={async m => { await actions.confirmPin(id, pinFor, m.id); setPinFor(null); toast('PIN ✓') }} />}
       </Sheet>}
     </div>
   )

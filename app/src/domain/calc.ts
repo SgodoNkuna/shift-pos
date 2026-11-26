@@ -30,7 +30,7 @@ export interface ShiftTotals {
 }
 
 export type FlagCode = 'opening_changed' | 'stock_diff' | 'cash_diff' | 'card_diff' | 'cash_ok' | 'card_ok' | 'stock_out'
-  | 'low_stock' | 'category_mismatch' | 'category_ok' | 'void'
+  | 'low_stock' | 'category_mismatch' | 'category_ok' | 'void' | 'self_handover'
 export interface Flag { level: 'bad' | 'warn' | 'ok' | 'info'; code: FlagCode; text: string; productId?: string }
 
 export type LockReason = 'pending_out' | 'no_cash_count' | 'no_card_slip' | 'missing_pin_out' | 'missing_pin_in'
@@ -98,6 +98,8 @@ export function shiftFlags(d: ShiftData, names: Record<string, string> = {}): Fl
   const prod = (id: string) => d.products.find(x => x.id === id)!
   const lines = itemLines(d)
 
+  if (d.shift.pinInBy && d.shift.pinInBy === d.shift.pinOutBy) flags.push({ level: 'warn', code: 'self_handover',
+    text: `Counted alone: ${who(d.shift.pinOutBy)} closed this shift and is working the next one. Boss and manager were alerted.` })
   const changes = Object.entries(d.shift.openingChanges ?? {})
   if (changes.length) flags.push({ level: 'warn', code: 'opening_changed',
     text: `Opening count changed at clock in: ${changes.map(([id, c]) => `${name(id)} ${formatQty(prod(id), c.from)} → ${formatQty(prod(id), c.to)}`).join(', ')}`

@@ -5,10 +5,17 @@ import type { StaffMember } from '../../data/db'
 import { displayName, periodSummary, shiftFlags, shiftTotals } from '../../domain/calc'
 import { formatQty, formatRand } from '../../domain/num'
 import { Header, useStaff } from '../kit'
+import { certMatches, certNumber, sealCode } from '../../report/names'
 
 /** Manager and boss: totals for the last 7 or 30 days, every shift with its problems, best sellers. Boss also sees profit. */
 export function Reports({ me, onOpenReport }: { me: StaffMember; onOpenReport: (id: string) => void }) {
   const [days, setDays] = useState<7 | 30>(7)
+  const [cert, setCert] = useState('')
+  const found = useLiveQuery(async () => {
+    if (cert.replace(/[^a-z0-9]/gi, '').length < 6) return null
+    const s = (await db.shifts.toArray()).find(x => x.lockedAt && certMatches(cert, x))
+    return s ? actions.loadShiftData(s.id) : undefined
+  }, [cert])
   const staff = useStaff()
   const costs: Record<string, number> = useLiveQuery(() => getMeta<Record<string, number>>('costs', {}), [], {})
   const datas = useLiveQuery(async () => {
@@ -26,6 +33,16 @@ export function Reports({ me, onOpenReport }: { me: StaffMember; onOpenReport: (
     <div className="main enter">
       <Header title="Reports" sub={`${r.shifts} locked shift${r.shifts === 1 ? '' : 's'}`} />
       <div className="pad stack">
+        <label htmlFor="cert-find" className="lbl">Check a printed report</label>
+        <input id="cert-find" placeholder="Certificate number, e.g. HCL-261126-D-7F3A9C" value={cert} onChange={e => setCert(e.target.value)} autoCapitalize="characters" />
+        {found === undefined && cert && <div className="banner warnb">No locked report with that certificate number on this phone (the app keeps the last 31 days).</div>}
+        {found && (() => { const t = shiftTotals(found); return (
+          <button className="banner okb2" style={{ textAlign: 'left' }} onClick={() => onOpenReport(found.shift.id)}>
+            <b>Found: {found.shift.kind === 'day' ? 'Day' : 'Night'} shift {found.shift.date}</b>
+            <span className="num">{certNumber(found.shift)} · seal <b>{sealCode(found)}</b></span>
+            <span>Total sales {formatRand(t.salesCents)} · cash counted {found.shift.cashCountedCents != null ? formatRand(found.shift.cashCountedCents) : '—'}</span>
+            <span className="small">The seal on the paper must say <b>{sealCode(found)}</b>. If it doesn’t, the printout was changed. Tap to open the report.</span>
+          </button>) })()}
         <div className="seg" style={{ gridTemplateColumns: '1fr 1fr' }}>
           {([7, 30] as const).map(d => <button key={d} className={days === d ? 'on' : ''} onClick={() => setDays(d)}>LAST {d} DAYS</button>)}
         </div>
@@ -54,6 +71,7 @@ export function Reports({ me, onOpenReport }: { me: StaffMember; onOpenReport: (
                 <span className="muted">{names[d.shift.pinOutBy ?? d.shift.openedBy] ?? '—'}</span>
                 {bad ? <span className="bad"> · {bad} to check</span> : <span className="ok"> · all adds up</span>}
                 {!d.shift.sentAt && <span className="warn"> · not sent</span>}
+                <span className="muted num"> · {certNumber(d.shift)}</span>
               </div>
             </button>)
         }) : <p className="muted">No locked shifts in this period yet.</p>}

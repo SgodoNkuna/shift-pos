@@ -2,6 +2,7 @@ import { shiftFlags, shiftTotals } from '../domain/calc'
 import { formatRand } from '../domain/num'
 import type { ShiftData } from '../domain/types'
 import { SHOP } from '../app/brand'
+import { certNumber, sealCode } from './names'
 
 /** The short message that goes with the files on WhatsApp. */
 export function shareText(d: ShiftData, by: string, names: Record<string, string> = {}): string {
@@ -11,5 +12,6 @@ export function shareText(d: ShiftData, by: string, names: Record<string, string
     `${SHOP.name} · ${d.shift.kind === 'day' ? 'Day' : 'Night'} shift ${d.shift.date} · sent by ${by}`,
     `Sales ${formatRand(t.salesCents)} (card ${formatRand(t.cardCents)}, cash ${formatRand(t.cashCents)})`,
     bad.length ? `⚠ ${bad.length} to check: ${bad.map(f => f.text).join('; ')}` : 'Everything adds up ✓',
+    ...(d.shift.lockedAt ? [`Certificate ${certNumber(d.shift)} · seal ${sealCode(d)}`] : []),
   ].join('\n')
 }
