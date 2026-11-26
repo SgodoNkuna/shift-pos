@@ -2,6 +2,7 @@ import { ShiftDB, type StaffMember } from '../data/db'
 import { createActions } from '../data/actions'
 import { hashPin } from '../auth/pin'
 import { SHEET_OPENING, SHEET_PRODUCTS } from '../domain/fixtures'
+import { CATALOG, CATALOG_OPENING } from '../domain/catalog'
 import type { Role } from '../domain/types'
 
 export const db = new ShiftDB()
@@ -57,10 +58,10 @@ export const DEMO_LOGINS: { name: string; role: Role; pin: string }[] = [
 
 export async function startDemo(): Promise<void> {
   for (const d of DEMO_LOGINS) await addStaff(d.name, d.role, d.pin)
-  await db.products.bulkPut(SHEET_PRODUCTS)
-  await setMeta('firstOpening', SHEET_OPENING)
+  await db.products.bulkPut(CATALOG)
+  await setMeta('firstOpening', CATALOG_OPENING)
   await setMeta('floatCents', 20000)
-  await setMeta('costs', Object.fromEntries(SHEET_PRODUCTS.map(p => [p.id, Math.round(p.priceCents * 0.5)])))
+  await setMeta('costs', Object.fromEntries(CATALOG.map(p => [p.id, Math.round(p.priceCents * 0.5)])))
   await setMeta('demo', true)
 }
 

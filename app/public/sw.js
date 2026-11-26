@@ -1,5 +1,5 @@
 // Hash Cannabis Lounge background helper: opens the app without signal, and shows alerts.
-const CACHE = 'shiftpos-v2'
+const CACHE = 'shiftpos-v3'
 
 self.addEventListener('install', e => {
   self.skipWaiting()

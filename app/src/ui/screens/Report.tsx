@@ -25,7 +25,8 @@ export function Report({ data, me, onDone, autoSend = false }: { data: ShiftData
     setBusy(true)
     try {
       const [{ buildPdf }, { buildXlsx }] = await Promise.all([import('../../report/pdf'), import('../../report/xlsx')])
-      const pdf = new File([buildPdf(data, names)], reportFileName(data, 'pdf'), { type: 'application/pdf' })
+      const logo = SHOP.logo ? await fetch(SHOP.logo).then(r => r.blob()).then(b => new Promise<string>(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result as string); fr.readAsDataURL(b) })).catch(() => undefined) : undefined
+      const pdf = new File([buildPdf(data, names, logo)], reportFileName(data, 'pdf'), { type: 'application/pdf' })
       const xlsx = new File([await buildXlsx(data, names)], reportFileName(data, 'xlsx'), { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
       const r = await shareFiles([pdf, xlsx], shareText(data, me.name, names))
       if (r === 'shared') { await actions.markSent(s.id, me.id); toast('Sent') }

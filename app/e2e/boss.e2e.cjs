@@ -25,26 +25,26 @@ const [, , BASE = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await p.screenshot({ path: `${SHOTS}/boss-settings.png` })
     await btn('Save settings').click(); await p.getByText('Settings saved').waitFor()
   })
-  await step('products: Outdoor cost R9; Raw R40 → R45 with the "old sales keep" warning; add Lighter R15', async () => {
+  await step('products: Outdoor cost R9; Raw R40 → R45 with the "old sales keep" warning; add Matches R15', async () => {
     await menu('Products & prices')
     await p.getByRole('button', { name: /^Outdoor/ }).click(); await p.getByLabel('Cost price (R) · only you see this').fill('9'); await btn('Save').click(); await p.getByText('Saved').first().waitFor()
     await p.getByRole('button', { name: /^Raw/ }).click(); await p.getByLabel('Price (R)', { exact: true }).fill('45')
     await p.getByText('Sales already made keep R40').waitFor(); await btn('Save').click(); await p.getByText('Saved').first().waitFor()
-    await btn('Add a product').click(); await p.getByLabel('Name').fill('Lighter'); await btn('Drinks').click(); await p.getByLabel('Price (R)', { exact: true }).fill('15')
-    await btn('Add product').click(); await p.getByText('Lighter added').waitFor()
+    await btn('Add a product').click(); await p.getByLabel('Name').fill('Matches'); await btn('Drinks').click(); await p.getByLabel('Price (R)', { exact: true }).fill('15')
+    await btn('Add product').click(); await p.getByText('Matches added').waitFor()
     await p.getByRole('button', { name: /^Raw R45/ }).waitFor(); await p.screenshot({ path: `${SHOTS}/boss-products.png` }); await close()
   })
-  await step('clock in: correct Super Cheese 25 → 24; float shows R200', async () => {
+  await step('clock in: correct Super Cheese 14 → 13; float shows R200', async () => {
     await btn('Start a shift myself').click(); await btn('Correct a count').click()
-    const sc = p.getByLabel('Real count Super Cheese'); await sc.fill('24'); await sc.blur()
+    const sc = p.getByLabel('Real count Super Cheese'); await sc.fill('13'); await sc.blur()
     await p.getByText('1 count changed').waitFor(); await p.locator('.row', { hasText: 'Cash float' }).getByText('R200').waitFor()
     await p.screenshot({ path: `${SHOTS}/boss-clockin-correct.png` })
     await btn('Confirm & start shift').click(); await p.getByRole('tab', { name: 'Main' }).waitFor()
   })
-  await step('sell Outdoor R20 cash; new Lighter tile is on the Drinks tab; Raw is now R45', async () => {
+  await step('sell Outdoor R20 cash; new Matches tile is on the Drinks tab; Raw is now R45', async () => {
     await p.getByRole('tab', { name: 'Main' }).click(); await p.getByRole('button', { name: /^Outdoor,/ }).click(); await btn('Cash').click(); await btn('Record sale').click()
     await p.getByText('Sale recorded').waitFor()
-    await p.getByRole('tab', { name: 'Drinks' }).click(); await p.getByRole('button', { name: /^Lighter, R15/ }).waitFor()
+    await p.getByRole('tab', { name: 'Drinks' }).click(); await p.getByRole('button', { name: /^Matches, R15/ }).waitFor()
     await p.getByRole('tab', { name: 'Rolling' }).click(); await p.getByRole('button', { name: /^Raw, R45/ }).waitFor()
   })
   await step('stock out reasons include "Broken"', async () => { await btn('Out').click(); await btn('Broken').waitFor() })
@@ -58,7 +58,7 @@ const [, , BASE = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await btn('Lock & send report').click(); await p.getByText('Shift report').waitFor()
   })
   await step('report: correction flagged with the boss\'s name; boss sees profit R11 on Outdoor', async () => {
-    await p.getByText('Opening count changed at clock in: Super Cheese 25 → 24 (by Demo Boss)').waitFor()
+    await p.getByText('Opening count changed at clock in: Super Cheese 14 → 13 (by Demo Boss)').waitFor()
     await p.getByText('Cash counted matches expected (R220)').waitFor()
     const prof = p.locator('.block', { hasText: 'Profit · only you see this' })
     await prof.locator('tr', { hasText: 'Outdoor' }).getByText('R11').waitFor()

@@ -148,3 +148,7 @@ select, input { width: 100%; min-height: 48px; background: var(--steel); border:
 .pflags .fbad { color: #b3261e; font-weight: 600 } .pflags .fok { color: #1e7a4f }
 
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important } }
+
+.brandmark { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 14px 0 4px }
+.brandmark img { width: 104px; height: 104px; background: #fff; border-radius: 22px; padding: 6px; box-shadow: 0 0 0 1px var(--line-2) }
+.brandmark span { font: 600 13px var(--f-display); letter-spacing: .32em; color: var(--accent); margin-left: .32em }

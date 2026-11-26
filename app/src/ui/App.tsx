@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { db, DEMO_LOGINS, getMeta, openShiftNow, resetPhone, startDemo } from '../app/store'
 import type { StaffMember } from '../data/db'
-import { PinPad, Sheet, ToastHost, useShiftData, useStaff } from './kit'
+import { BrandMark, PinPad, Sheet, ToastHost, useShiftData, useStaff } from './kit'
 import { Setup } from './screens/Setup'
 import { ClockIn } from './screens/ClockIn'
 import { Sell } from './screens/Sell'
@@ -21,7 +21,7 @@ import { deviceStaffId, supabase } from '../sync/client'
 import { onSync, startSync, syncState, type SyncState } from '../sync/engine'
 
 import { AlertsCard } from './Alerts'
-import { DEMO_ONLY, SHOP } from '../app/brand'
+import { DEMO_ONLY } from '../app/brand'
 
 type Tab = 'sell' | 'in' | 'out' | 'exp' | 'close'
 const TABS: [Tab, string][] = [['sell', 'Sell'], ['in', 'In'], ['out', 'Out'], ['exp', 'Expense'], ['close', 'Close']]
@@ -79,7 +79,7 @@ function Shell() {
   else if (staffCount === 0) body = supabase || DEMO_ONLY ? <Welcome onDemo={() => void startDemo()} /> : <Setup onDone={setMe} />
   else if (!me) body = (
     <div className="main enter"><div className="pad stack pinwrap">
-      <div className="mark"><span>{SHOP.markTop}</span>{SHOP.markMain}</div>
+      <BrandMark />
       <PinPad people={deviceId ? staff.filter(s => s.id === deviceId) : staff} onOk={m => setMe(m)} />
       {demo && <div className="note small" style={{ textAlign: 'left', width: '100%' }}><b>Demo logins</b><br />
         {DEMO_LOGINS.map(d => <span key={d.name}>{d.name} ({d.role}): PIN <b className="num">{d.pin}</b><br /></span>)}</div>}

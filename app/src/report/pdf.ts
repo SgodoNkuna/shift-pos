@@ -11,7 +11,7 @@ const safe = (s: string) => s.replace(/−/g, '-').replace(/✓/g, 'OK').replace
 const catName: Record<string, string> = { main: 'Main', drinks: 'Drinks', rolling: 'Rolling' }
 
 /** A4 report laid out like the paper sheet: header, one table per category, totals, logs and flags. */
-export function buildPdf(d: ShiftData, names: Names = {}): Blob {
+export function buildPdf(d: ShiftData, names: Names = {}, logoDataUrl?: string): Blob {
   const n = (id?: string) => (id ? names[id] ?? '' : '')
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const t = shiftTotals(d)
@@ -23,6 +23,7 @@ export function buildPdf(d: ShiftData, names: Names = {}): Blob {
   doc.text(`${kind.toUpperCase()} SHIFT  ${d.shift.date}`, 14, 16)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(9)
   doc.text(safe(`${n(d.shift.openedBy)} -> ${n(d.shift.pinInBy)}   Locked ${d.shift.lockedAt ? new Date(d.shift.lockedAt).toLocaleString('en-ZA', { timeZone: 'Africa/Johannesburg' }) : 'NO'}`), 14, 22)
+  if (logoDataUrl) doc.addImage(logoDataUrl, 'PNG', 180, 4, 16, 16)
   doc.setLineWidth(0.6); doc.line(14, 24, 196, 24)
 
   let y = 28

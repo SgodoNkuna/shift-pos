@@ -11,11 +11,12 @@ export async function pull(sb: SupabaseClient, meId: string): Promise<void> {
   const waiting = new Set((await db.outbox.toArray()).map(e => e.id))
   const keep = <T extends { id: string }>(rows: T[]) => rows.filter(r => !waiting.has(r.id))
 
+  const since = new Date(Date.now() - 31 * 86400_000).toISOString().slice(0, 10)
   const [staff, products, settings, shifts, costs] = await Promise.all([
     sb.from('staff').select('id, name, role, phone, active'),
     sb.from('products').select('*'),
     sb.from('settings').select('key, value'),
-    sb.from('shifts').select('*').gte('date', new Date(Date.now() - 31 * 86400_000).toISOString().slice(0, 10)).order('opened_at', { ascending: false }).limit(70),
+    sb.from('shifts').select('*').gte('date', since).order('opened_at', { ascending: false }).limit(70),
     sb.from('product_costs').select('product_id, cents'), // empty unless this is the boss
   ])
   for (const r of [staff, products, settings, shifts]) if (r.error) throw r.error
@@ -40,6 +41,16 @@ export async function pull(sb: SupabaseClient, meId: string): Promise<void> {
   await db.transaction('rw', [db.staff, db.products, db.shifts, db.sales, db.moves, db.expenses, db.meta], async () => {
     await db.staff.bulkPut(people)
     await db.products.bulkPut((products.data as Row[]).map(r => fromRow<Product>('products', r)))
+    // Shifts the server no longer has (e.g. an empty test shift that was removed) go from this phone too,
+    // unless this phone still has unsent changes for them.
+    const onServer = new Set(ids)
+    const gone = (await db.shifts.where('date').aboveOrEqual(since).toArray()).filter(s => !onServer.has(s.id) && !waiting.has(s.id))
+    for (const s of gone) {
+      const rows = await Promise.all([db.sales, db.moves, db.expenses].map(t => (t as typeof db.sales).where('shiftId').equals(s.id).primaryKeys()))
+      if (rows.flat().some(id => waiting.has(id as string))) continue
+      await Promise.all([db.sales.where('shiftId').equals(s.id).delete(), db.moves.where('shiftId').equals(s.id).delete(), db.expenses.where('shiftId').equals(s.id).delete()])
+      await db.shifts.delete(s.id)
+    }
     await db.shifts.bulkPut(shiftRows)
     await db.sales.bulkPut(keep((sales.data as Row[]).map(r => fromRow<Sale>('sales', r))))
     await db.moves.bulkPut(keep((moves.data as Row[]).map(r => fromRow<StockMove>('moves', r))))

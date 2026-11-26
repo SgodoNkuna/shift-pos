@@ -33,9 +33,9 @@ const [, , URL = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await p.locator('.change').getByText('R10').waitFor(); await shot('04-pay-change')
     await btn('Record sale').click(); await p.getByText('Sale recorded').waitFor()
   })
-  await step('three-tap sale: Gummies → Cash → Record', async () => {
-    await p.getByRole('button', { name: /^Gummies,/ }).click(); await btn('Cash').click(); await btn('Record sale').click()
-    await p.getByText(/Last sale R30/).waitFor()
+  await step('three-tap sale: Castro Pop → Cash → Record', async () => {
+    await p.getByRole('button', { name: /^Castro Pop,/ }).click(); await btn('Cash').click(); await btn('Record sale').click()
+    await p.getByText(/Last sale R60/).waitFor()
   })
   await step('undo last sale', async () => { await btn('Undo').click(); await p.getByText('Last sale undone').waitFor() })
   await step('split sale: Kings + Super Cheese = R280, R200 card + R80 cash', async () => {
@@ -43,11 +43,11 @@ const [, , URL = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await btn('Part cash, part card').click(); await btn('R200').click()
     await p.locator('.change').getByText('R80').waitFor(); await btn('Record sale').click(); await p.getByText('Sale recorded').waitFor()
   })
-  await step('stock in: 24 Coke, then Drinks shows 24 left', async () => {
+  await step('stock in: 24 Coke, then Drinks shows 29 left (5 + 24)', async () => {
     await btn('In').click(); await p.getByLabel('Product').selectOption('coke')
     await btn('+12').click(); await btn('+12').click(); await btn('Add to stock').click()
     await btn('Sell').click(); await p.getByRole('tab', { name: 'Drinks' }).click()
-    await p.getByRole('button', { name: /^Coke, R20, 24 left/ }).waitFor()
+    await p.getByRole('button', { name: /^Coke, R20, 29 left/ }).waitFor()
   })
   await step('stock out 0.5 g Martian F → pending, manager approves with PIN', async () => {
     await btn('Out').click(); await p.getByLabel('Product').selectOption('martian'); await btn('Given to boss').click()
@@ -61,14 +61,14 @@ const [, , URL = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await btn('Save expense').click(); await p.getByText('Expense noted').waitFor()
   })
   await step('clock out: lock is blocked and says why', async () => {
-    await btn('Close').click(); await p.getByText('Count every item (24 left)').waitFor()
+    await btn('Close').click(); await p.getByText('Count every item (27 left)').waitFor()
     if (!(await btn('Lock & send report').isDisabled())) throw new Error('lock should be disabled')
   })
-  await step('count: Super Cheese 23 (one short), rest match', async () => {
-    const sc = p.getByLabel('Counted Super Cheese'); await sc.fill('23'); await sc.blur()
+  await step('count: Super Cheese 12 (one short of 13), rest match', async () => {
+    const sc = p.getByLabel('Counted Super Cheese'); await sc.fill('12'); await sc.blur()
     await p.getByText('−1 · −R30').waitFor()
     for (let i = 0; i < 6; i++) { const m = p.getByRole('button', { name: /^All the rest in .* match$/ }); if (!(await m.count())) break; await m.first().click(); await p.waitForTimeout(300) }
-    await p.getByText(/24 of 24 counted/).waitFor()
+    await p.getByText(/27 of 27 counted/).waitFor()
   })
   await step('card slip R200 and cash R350 (float R200 + R150) match', async () => {
     const slip = p.getByLabel('Card machine end-of-day total'); await slip.fill('200'); await slip.blur()
@@ -82,16 +82,16 @@ const [, , URL = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await btn('Lock & send report').click(); await p.getByText('Shift report').waitFor()
   })
   await step('report shows flags and sends (downloads both files headless)', async () => {
-    await p.getByText(/Super Cheese: counted 23, expected 24/).waitFor()
+    await p.getByText(/Super Cheese: counted 12, expected 13/).waitFor()
     await p.getByText(/Cash counted matches expected \(R350\)/).waitFor()
     await p.getByText(/Card slip matches till card sales \(R200\)/).waitFor()
     await shot('07-report')
     await btn('Send to WhatsApp').click(); await p.getByText(/^Sent ·/).waitFor({ timeout: 20000 })
     if (downloads.length !== 2) throw new Error('expected 2 files, got ' + downloads.join(','))
   })
-  await step('next shift opens with the counted close (Super Cheese 23)', async () => {
+  await step('next shift opens with the counted close (Super Cheese 12)', async () => {
     await btn('Done · sign out').click(); await btn('Demo Employee 2').click(); await pin('4444')
-    const row = p.locator('.row', { hasText: 'Super Cheese' }); await row.getByText('23').waitFor()
+    const row = p.locator('.row', { hasText: 'Super Cheese' }); await row.getByText('12').waitFor()
   })
   console.log('files:', downloads.join(', '))
   console.log('errors:', errors.length ? errors : 'none')

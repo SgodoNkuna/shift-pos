@@ -1,3 +1,4 @@
+import { BrandMark } from '../kit'
 import { useState } from 'react'
 import { db } from '../../app/store'
 import { hashPin } from '../../auth/pin'
@@ -50,7 +51,7 @@ export function Join({ token, onDone }: { token: string; onDone: (m: StaffMember
 
   return (
     <div className="main enter"><div className="pad stack">
-      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>{SHOP.markTop}</span>{SHOP.markMain}</div>
+      <BrandMark />
       {step !== 'pin' ? <>
         <div className="note">You were invited to the {SHOP.name} shift app. Tap below to set up this phone. It only works once.</div>
         <button className="blk primary" onClick={join} disabled={step === 'busy'}>{step === 'busy' ? 'Setting up…' : 'Set up this phone'}</button>
@@ -70,7 +71,7 @@ export function Join({ token, onDone }: { token: string; onDone: (m: StaffMember
 export function Welcome({ onDemo }: { onDemo: () => void }) {
   return (
     <div className="main enter"><div className="pad stack">
-      <div className="mark" style={{ alignItems: 'center', padding: '18px 0 6px' }}><span>{SHOP.markTop}</span>{SHOP.markMain}</div>
+      <BrandMark />
       {DEMO_ONLY ? <div className="note">This is a demo of the shift app: a till, stock count and shift report. Everything stays in this page.</div> : <>
         <div className="note">Open the <b>invite link</b> the manager sent you on WhatsApp. It sets up this phone for you.</div>
         <p className="muted small">No link? Ask the manager or the boss to send you one from the app (Menu → People).</p></>}
