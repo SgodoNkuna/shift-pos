@@ -21,6 +21,7 @@ import { deviceStaffId, supabase } from '../sync/client'
 import { onSync, startSync, syncState, type SyncState } from '../sync/engine'
 
 import { AlertsCard } from './Alerts'
+import { Restock } from './Restock'
 import { DEMO_ONLY } from '../app/brand'
 
 type Tab = 'sell' | 'in' | 'out' | 'exp' | 'close'
@@ -58,9 +59,11 @@ function Shell() {
   const [tab, setTab] = useState<Tab>('sell')
   const [reportId, setReportId] = useState<string | null>(null)
   const [autoSend, setAutoSend] = useState(false)
-  const [menu, setMenu] = useState<null | 'menu' | 'people' | 'settings' | 'products'>(null)
+  const [menu, setMenu] = useState<null | 'menu' | 'people' | 'settings' | 'products' | 'restock'>(null)
   const open = useLiveQuery(() => openShiftNow(), [], undefined)
   const data = useShiftData(reportId ?? open?.id)
+  const lastLocked = useLiveQuery(async () => (await db.shifts.toArray()).filter(s => s.lockedAt).sort((a, b) => b.lockedAt!.localeCompare(a.lockedAt!))[0]?.id, [], undefined)
+  const stockData = useShiftData(open?.id ?? lastLocked)
   const pending = data?.moves.filter(m => m.kind === 'out' && m.status === 'pending').length ?? 0
   const signOut = () => { setMe(null); setReportId(null); setTab('sell'); setMenu(null); setLeadTill(false); setReports(false) }
   const lead = me != null && me.role !== 'employee'
@@ -120,10 +123,12 @@ function Shell() {
         {lead && <button className="blk" onClick={() => setMenu('people')}>People</button>}
         {lead && <button className="blk" onClick={() => setMenu('products')}>Products &amp; prices</button>}
         {me.role === 'boss' && <button className="blk" onClick={() => setMenu('settings')}>Settings</button>}
+        {stockData && <button className="blk" onClick={() => setMenu('restock')}>Restock list</button>}
         <AlertsCard me={me} />
         {!deviceId && (supabase || DEMO_ONLY) && <button className="blk badb" onClick={() => void resetPhone()}>{demo ? 'Leave the demo' : 'Leave test mode'} (wipes this phone)</button>}
         <button className="blk" onClick={signOut}>Sign out</button>
       </Sheet>}
+      {menu === 'restock' && me && stockData && <Restock data={stockData} by={me.name} onClose={() => setMenu(null)} />}
       {menu === 'people' && me && <People me={me} onClose={() => setMenu(null)} />}
       {menu === 'settings' && me?.role === 'boss' && <Settings onClose={() => setMenu(null)} />}
       {menu === 'products' && me && me.role !== 'employee' && <Products me={me} onClose={() => setMenu(null)} />}

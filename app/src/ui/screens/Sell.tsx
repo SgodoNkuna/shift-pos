@@ -1,4 +1,6 @@
 import { useMemo, useState } from 'react'
+import { useLiveQuery } from 'dexie-react-hooks'
+import { db } from '../../app/store'
 import { actions } from '../../app/store'
 import type { StaffMember } from '../../data/db'
 import { itemLines } from '../../domain/calc'
@@ -12,11 +14,22 @@ import { displayName } from '../../domain/calc'
 export function Sell({ data, me }: { data: ShiftData; me: StaffMember }) {
   const toast = useToast()
   const products = data.products.filter(p => p.active)
-  const cats = [...new Set(products.map(p => p.categoryId))]
-  const [cat, setCat] = useState(cats[0] ?? 'main')
+  const expected = useMemo(() => Object.fromEntries(itemLines(data).map(l => [l.productId, l.expected])), [data])
+  // Favourites: the 6 best sellers over the last few shifts on this phone (paper-sheet order until there are sales).
+  const recent = useLiveQuery(async () => {
+    const ids = (await db.shifts.orderBy('date').reverse().limit(6).toArray()).map(s => s.id)
+    return db.sales.where('shiftId').anyOf(ids).toArray()
+  }, [], [])
+  const top = useMemo(() => {
+    const n: Record<string, number> = {}
+    for (const s of recent) if (!s.void) for (const l of s.lines) n[l.productId] = (n[l.productId] ?? 0) + 1
+    const ranked = [...products].sort((a, b) => (n[b.id] ?? 0) - (n[a.id] ?? 0) || (a.sort ?? 0) - (b.sort ?? 0))
+    return ranked.filter(p => (expected[p.id] ?? 0) > 0).slice(0, 6).map(p => p.id)
+  }, [recent, products, expected])
+  const cats = ['top', ...new Set(products.map(p => p.categoryId))]
+  const [cat, setCat] = useState('top')
   const [basket, setBasket] = useState<Basket>([])
   const [paying, setPaying] = useState<null | PayMode>(null)
-  const expected = useMemo(() => Object.fromEntries(itemLines(data).map(l => [l.productId, l.expected])), [data])
   const total = basketTotal(basket, products)
   const last = [...data.sales].filter(s => !s.void && s.by === me.id).sort((a, b) => b.at.localeCompare(a.at))[0]
   const lastTotal = last ? Math.round(last.lines.reduce((a, l) => a + l.qty * l.unitCents, 0)) : 0
@@ -25,9 +38,9 @@ export function Sell({ data, me }: { data: ShiftData; me: StaffMember }) {
     <div className="main flex enter">
       <ShiftStrip data={data} meId={me.id} />
       <div className="tabs" role="tablist">{cats.map(c =>
-        <button key={c} role="tab" aria-selected={cat === c} className={`tab ${cat === c ? 'on' : ''}`} onClick={() => setCat(c)}>{catLabel(c)}</button>)}
+        <button key={c} role="tab" aria-selected={cat === c} className={`tab ${cat === c ? 'on' : ''}`} onClick={() => setCat(c)}>{c === 'top' ? '★ Top' : catLabel(c)}</button>)}
       </div>
-      <div className="tiles">{products.filter(p => p.categoryId === cat).map(p => {
+      <div className="tiles">{(cat === 'top' ? top.map(id => products.find(p => p.id === id)!) : products.filter(p => p.categoryId === cat)).map(p => {
         const left = Math.round(((expected[p.id] ?? 0) - basketQty(basket, p.id)) * 10) / 10
         const st = left <= 0 ? 'out' : left <= p.lowAt ? 'low' : ''
         return (

@@ -7,6 +7,7 @@ import type { ShiftData } from '../../domain/types'
 import { LockError } from '../../data/actions'
 import { catLabel, Header, PinPad, Sheet, useStaff, useToast } from '../kit'
 import { OutCard } from './StockOut'
+import { CashCount } from '../CashCount'
 
 export const LOCK_TEXT: Record<LockReason | 'not_counted', string> = {
   pending_out: 'A stock out is still waiting for approval',
@@ -24,6 +25,7 @@ export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMem
   const toast = useToast()
   const staff = useStaff()
   const [pinFor, setPinFor] = useState<null | 'out' | 'in'>(null)
+  const [counting, setCounting] = useState(false)
   const lines = itemLines(data)
   const t = shiftTotals(data)
   const s = data.shift
@@ -91,6 +93,7 @@ export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMem
           <label htmlFor="co-cash">Cash you counted</label>
           <input id="co-cash" inputMode="decimal" placeholder="R" key={`cash:${s.cashCountedCents}`} defaultValue={s.cashCountedCents != null ? s.cashCountedCents / 100 : ''}
             onBlur={e => actions.setCash(id, e.target.value.trim() === '' ? null : parseRand(e.target.value), me.id)} />
+          <span /><button className="linkbtn" style={{ justifySelf: 'end' }} onClick={() => setCounting(true)}>Count notes &amp; coins</button>
           <span className="muted">Difference</span>
           <span className="v">{t.cashDiffCents == null ? '—' : t.cashDiffCents === 0 ? <span className="ok">✓</span> : <span className="bad num">{formatRand(t.cashDiffCents)}</span>}</span>
         </div></div>
@@ -106,6 +109,8 @@ export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMem
         <button className="blk primary" disabled={reasons.length > 0} onClick={lock}>Lock &amp; send report</button>
       </div>
 
+      {counting && <CashCount expectedCents={t.expectedCashCents} onClose={() => setCounting(false)}
+        onUse={async c => { await actions.setCash(id, c, me.id); setCounting(false); toast(`Cash ${formatRand(c)} entered`) }} />}
       {pinFor && <Sheet title={pinFor === 'out' ? 'Your PIN' : 'Next person’s PIN'} onClose={() => setPinFor(null)}>
         <PinPad people={pinFor === 'out' ? [me] : staff.filter(x => x.id !== me.id && !x.locked)} prompt="Who is starting the next shift?"
           onOk={async m => { await actions.confirmPin(id, pinFor, m.id); setPinFor(null); toast('PIN ✓') }} />
