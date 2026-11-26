@@ -61,14 +61,14 @@ const [, , URL = 'http://localhost:4173', SHOTS = '/tmp'] = process.argv
     await btn('Save expense').click(); await p.getByText('Expense noted').waitFor()
   })
   await step('clock out: lock is blocked and says why', async () => {
-    await btn('Close').click(); await p.getByText('Count every item (27 left)').waitFor()
+    await btn('Close').click(); await p.getByText('Count every item (28 left)').waitFor()
     if (!(await btn('Lock & send report').isDisabled())) throw new Error('lock should be disabled')
   })
   await step('count: Super Cheese 12 (one short of 13), rest match', async () => {
     const sc = p.getByLabel('Counted Super Cheese'); await sc.fill('12'); await sc.blur()
     await p.getByText('−1 · −R30').waitFor()
     for (let i = 0; i < 6; i++) { const m = p.getByRole('button', { name: /^All the rest in .* match$/ }); if (!(await m.count())) break; await m.first().click(); await p.waitForTimeout(300) }
-    await p.getByText(/27 of 27 counted/).waitFor()
+    await p.getByText(/28 of 28 counted/).waitFor()
   })
   await step('card slip R200 and cash R350 (float R200 + R150) match', async () => {
     const slip = p.getByLabel('Card machine end-of-day total'); await slip.fill('200'); await slip.blur()
