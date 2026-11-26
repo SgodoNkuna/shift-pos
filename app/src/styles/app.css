@@ -195,3 +195,8 @@ select, input { width: 100%; min-height: 48px; background: var(--steel); border:
 .sl.undone .sl-what > :first-child, .sl.undone > b { text-decoration: line-through; opacity: .6 }
 .sl.undone b { text-decoration: line-through; color: var(--muted) }
 .sl-confirm { grid-column: 1 / -1; display: grid; gap: 8px; padding: 8px; border: 1px solid var(--bad); border-radius: 6px }
+/* iPhone setup steps */
+.ios-steps { margin: 0; padding-left: 22px; display: grid; gap: 14px }
+.ios-steps li { display: grid; gap: 6px }
+.ios-steps li::marker { font: 700 18px var(--f-display); color: var(--accent) }
+.ios-steps a.blk { text-decoration: none; display: grid; place-items: center }

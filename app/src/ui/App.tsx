@@ -16,6 +16,8 @@ import { Settings } from './screens/Settings'
 import { Products } from './screens/Products'
 import { Reports } from './screens/Reports'
 import { Join, Welcome } from './screens/Join'
+import { IosSetup } from './screens/IosSetup'
+import { isInstalled, isIos } from '../push/push'
 import { Overview } from './screens/Overview'
 import { deviceStaffId, supabase } from '../sync/client'
 import { onSync, startSync, syncState, type SyncState } from '../sync/engine'
@@ -82,7 +84,8 @@ function Shell() {
 
   let body
   const unfinished = !!deviceId && staff.length > 0 && !staff.find(s => s.id === deviceId)?.pinHash
-  if ((joinToken || unfinished) && !me) body = <Join token={joinToken} onDone={m => { setDeviceId(m.id); setMe(m) }} />
+  if (joinToken && !me && !deviceId && isIos() && !isInstalled() && !DEMO_ONLY) body = <IosSetup token={joinToken} />
+  else if ((joinToken || unfinished) && !me) body = <Join token={joinToken} onDone={m => { setDeviceId(m.id); setMe(m) }} />
   else if (staffCount === 0) body = supabase || DEMO_ONLY ? <Welcome onDemo={() => void startDemo()} /> : <Setup onDone={setMe} />
   else if (!me) body = (
     <div className="main enter"><div className="pad stack pinwrap">

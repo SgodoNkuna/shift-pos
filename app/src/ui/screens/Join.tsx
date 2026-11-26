@@ -1,4 +1,5 @@
 import { BrandMark } from '../kit'
+import { PasteInvite } from './IosSetup'
 import { useEffect, useState } from 'react'
 import { db } from '../../app/store'
 import { hashPin } from '../../auth/pin'
@@ -87,7 +88,8 @@ export function Welcome({ onDemo }: { onDemo: () => void }) {
       <BrandMark />
       {DEMO_ONLY ? <div className="note">This is a demo of the shift app: a till, stock count and shift report. Everything stays in this page.</div> : <>
         <div className="note">Open the <b>invite link</b> the manager sent you on WhatsApp. It sets up this phone for you.</div>
-        <p className="muted small">No link? Ask the manager or the boss to send you one from the app (Menu → People).</p></>}
+        <p className="muted small">No link? Ask the manager or the boss to send you one from the app (Menu → People).</p>
+        <PasteInvite /></>}
       {DEMO_ALLOWED && <div className="block">
         <b>Just looking?</b>
         <span className="muted small">The demo has the shop's products and four people to sign in as. Nothing you do reaches the real shop.</span>
