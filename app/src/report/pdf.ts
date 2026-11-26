@@ -21,7 +21,7 @@ const clock = (iso?: string) => (iso ? new Date(iso).toLocaleTimeString('en-ZA',
 const lockedLong = (iso?: string) => (iso ? new Date(iso).toLocaleString('en-ZA', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', timeZone: 'Africa/Johannesburg' }) : 'NOT LOCKED')
 
 /** A4 shift report: summary first in the paper sheet's words, then what to check, the stock tables, the logs, and a certificate stamp. */
-export function buildPdf(d: ShiftData, names: Names = {}, logoDataUrl?: string): Blob {
+export function buildPdf(d: ShiftData, names: Names = {}, logoDataUrl?: string, notes: string[] = [], source: 'app' | 'paper' = 'app'): Blob {
   const n = (id?: string) => (id ? names[id] ?? '' : '')
   const doc = new jsPDF({ unit: 'mm', format: 'a4' })
   const W = 210, M = 14, R = W - M
@@ -117,12 +117,13 @@ export function buildPdf(d: ShiftData, names: Names = {}, logoDataUrl?: string):
   const body: (string | { content: string; colSpan?: number; styles?: object })[][] = []
   const diffRows = new Set<number>()
   for (const c of [...new Set(d.products.map(p => p.categoryId))]) {
-    const ps = d.products.filter(x => x.categoryId === c)
+    // Items no longer sold are left out unless they had stock or movement this shift.
+    const ps = d.products.filter(x => x.categoryId === c && (x.active || lines.some(l => l.productId === x.id && (l.open || l.sold || l.stockIn || l.out || l.counted))))
     body.push([{ content: SHEET_CAT[c] ?? c, colSpan: 10, styles: { fontStyle: 'bold', fillColor: [226, 230, 234], textColor: INK } }])
     for (const p of ps) {
       const l = lines.find(x => x.productId === p.id)!
       const q = (v: number) => (v ? formatQty(p, v) : '')
-      if (p.track === false) { body.push([displayName(p, d.products), formatRand(p.priceCents), '', '', '', '', q(l.sold), l.salesCents ? formatRand(l.salesCents) : '', 'service', ''].map(safe)); continue }
+      if (p.track === false) { body.push([displayName(p, d.products), formatRand(p.priceCents), '', '', '', '', q(l.sold), l.salesCents ? formatRand(l.salesCents) : '', 'no count', ''].map(safe)); continue }
       if (l.diff) diffRows.add(body.length)
       body.push([displayName(p, d.products), formatRand(p.priceCents), q(l.open), q(l.stockIn), q(l.out), formatQty(p, l.counted ?? l.expected),
         q(l.sold), l.salesCents ? formatRand(l.salesCents) : '', formatRand(l.stockValueCents),
@@ -163,15 +164,26 @@ export function buildPdf(d: ShiftData, names: Names = {}, logoDataUrl?: string):
     y = lastY() + 6
   }
 
+  // ---------- Notes (e.g. a report typed from the paper sheet) ----------
+  if (notes.length) {
+    if (y > 250) { doc.addPage(); y = 18 }
+    y = heading('Notes', y)
+    autoTable(doc, { startY: y, theme: 'plain', margin: { left: M, right: M, bottom: 18 }, body: notes.map(t => [safe(t)]),
+      styles: { fontSize: 9, cellPadding: { top: 1.1, bottom: 1.1, left: 3, right: 2 }, textColor: INK, fillColor: ZEBRA } })
+    y = lastY() + 6
+  }
+
   // ---------- Certificate stamp ----------
   if (y > 297 - 18 - 52) { doc.addPage(); y = 18 }
   drawStamp(doc, R - 26, y + 25, cert, seal, d.shift.lockedAt ? lockedLong(d.shift.lockedAt) : 'NOT LOCKED', kind)
-  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); color(INK); doc.text('Certified shift report', M, y + 10)
+  doc.setFont('helvetica', 'bold'); doc.setFontSize(9); color(INK); doc.text(source === 'paper' ? 'Shift report from the paper sheet' : 'Certified shift report', M, y + 10)
   doc.setFont('helvetica', 'normal'); doc.setFontSize(8.5); color(MUTED)
-  doc.text(doc.splitTextToSize(safe(
-    `This report was made by the till app and locked at ${lockedLong(d.shift.lockedAt)} with two PINs` +
-    `${self ? ' (the same person, staying on)' : ''}. To check a printout, open the app, go to Reports and type the certificate number ${cert}. ` +
-    `The seal code ${seal} must match. If any number on this page was changed, the seal will not match.`), 120), M, y + 16)
+  doc.text(doc.splitTextToSize(safe(source === 'paper'
+    ? `This report was typed from the handwritten shift sheet on ${lockedLong(d.shift.lockedAt)}. The certificate number ${cert} links it to this shift in the app. ` +
+      `Seal ${seal} belongs to this paper copy only.`
+    : `This report was made by the till app and locked at ${lockedLong(d.shift.lockedAt)} with two PINs` +
+      `${self ? ' (the same person, staying on)' : ''}. To check a printout, open the app, go to Reports and type the certificate number ${cert}. ` +
+      `The seal code ${seal} must match. If any number on this page was changed, the seal will not match.`), 120), M, y + 16)
   doc.setFont('courier', 'bold'); doc.setFontSize(9); color(GREEN); doc.text(`${cert}   SEAL ${seal}`, M, y + 40)
 
   // ---------- Footer on every page ----------

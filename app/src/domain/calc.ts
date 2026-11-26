@@ -117,7 +117,7 @@ export function shiftFlags(d: ShiftData, names: Record<string, string> = {}): Fl
     ? { level: 'bad', code: 'card_diff', text: `Card slip ${formatRand(d.shift.cardSlipCents!)} vs till card sales ${formatRand(t.cardCents)} (${formatRand(t.cardDiffCents)})` }
     : { level: 'ok', code: 'card_ok', text: `Card slip matches till card sales (${formatRand(t.cardCents)})` })
   if (t.cashDiffCents != null) flags.push(t.cashDiffCents
-    ? { level: 'bad', code: 'cash_diff', text: `Cash counted ${formatRand(d.shift.cashCountedCents!)} vs expected ${formatRand(t.expectedCashCents)} (${formatRand(t.cashDiffCents)})` }
+    ? { level: 'bad', code: 'cash_diff', text: `Cash counted ${formatRand(d.shift.cashCountedCents!)} vs expected ${formatRand(t.expectedCashCents)} (${t.cashDiffCents! > 0 ? 'over +' : 'short '}${formatRand(t.cashDiffCents)})` }
     : { level: 'ok', code: 'cash_ok', text: `Cash counted matches expected (${formatRand(t.expectedCashCents)})` })
 
   for (const m of d.moves.filter(m => m.kind === 'out')) {
@@ -129,7 +129,7 @@ export function shiftFlags(d: ShiftData, names: Record<string, string> = {}): Fl
   for (const s of d.sales.filter(s => s.void)) flags.push({ level: 'warn', code: 'void',
     text: `Voided sale ${formatRand(Math.round(sumBy(s.lines, l => l.qty * l.unitCents)))} · ${s.void!.reason} · by ${who(s.void!.by)}` })
 
-  const low = lines.filter(l => prod(l.productId).track !== false && (l.counted ?? l.expected) <= prod(l.productId).lowAt)
+  const low = lines.filter(l => prod(l.productId).active && prod(l.productId).track !== false && (l.counted ?? l.expected) <= prod(l.productId).lowAt)
   if (low.length) flags.push({ level: 'warn', code: 'low_stock',
     text: `Low or out of stock: ${low.map(l => `${name(l.productId)} ${formatQty(prod(l.productId), l.counted ?? l.expected)}`).join(', ')}` })
 
