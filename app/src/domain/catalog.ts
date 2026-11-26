@@ -5,7 +5,7 @@ export const CATALOG: Product[] = [
   { id: 'outdoor', name: 'Outdoor', categoryId: 'main', unit: 'ea', step: 1, lowAt: 3, priceCents: 2000, active: true, sort: 1 },
   { id: 'supercheese', name: 'Super Cheese', categoryId: 'main', unit: 'ea', step: 1, lowAt: 3, priceCents: 3000, active: true, sort: 2 },
   { id: 'castro', name: 'Castro Pop', categoryId: 'main', unit: 'ea', step: 1, lowAt: 3, priceCents: 6000, active: true, sort: 3 },
-  { id: 'exodus', name: 'Exodus Cheese', categoryId: 'main', unit: 'ea', step: 1, lowAt: 3, priceCents: 3000, active: true, sort: 4 },
+  { id: 'exodus', name: 'Exodus Cheese', categoryId: 'main', unit: 'ea', step: 1, lowAt: 3, priceCents: 8000, active: true, sort: 4 },
   { id: 'icecream', name: 'Ice Cream C', categoryId: 'main', unit: 'g', step: 0.5, lowAt: 1, priceCents: 5000, active: true, sort: 5 },
   { id: 'pinkink', name: 'Pink Ink', categoryId: 'main', unit: 'g', step: 0.5, lowAt: 1, priceCents: 10000, active: true, sort: 6 },
   { id: 'icecool', name: 'Ice Cold', categoryId: 'main', unit: 'g', step: 0.5, lowAt: 1, priceCents: 12000, active: true, sort: 7 },

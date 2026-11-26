@@ -5,7 +5,7 @@ insert into public.products (id,name,category_id,unit,step,low_at,price_cents,ac
 ('outdoor','Outdoor','main','ea',1,3,2000,true,1),
 ('supercheese','Super Cheese','main','ea',1,3,3000,true,2),
 ('castro','Castro Pop','main','ea',1,3,6000,true,3),
-('exodus','Exodus Cheese','main','ea',1,3,3000,true,4),
+('exodus','Exodus Cheese','main','ea',1,3,8000,true,4),
 ('icecream','Ice Cream C','main','g',0.5,1,5000,true,5),
 ('pinkink','Pink Ink','main','g',0.5,1,10000,true,6),
 ('icecool','Ice Cold','main','g',0.5,1,12000,true,7),
