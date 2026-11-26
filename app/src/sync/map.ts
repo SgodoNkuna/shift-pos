@@ -10,7 +10,7 @@ const FIELDS: Record<SyncTable, [string, string][]> = {
   moves: [['id', 'id'], ['shiftId', 'shift_id'], ['productId', 'product_id'], ['qty', 'qty'], ['kind', 'kind'], ['status', 'status'], ['reason', 'reason'],
     ['by', 'by_staff'], ['at', 'at'], ['decidedBy', 'decided_by'], ['decidedAt', 'decided_at'], ['escalatedAt', 'escalated_at']],
   expenses: [['id', 'id'], ['shiftId', 'shift_id'], ['cents', 'cents'], ['note', 'note'], ['by', 'by_staff'], ['at', 'at']],
-  products: [['id', 'id'], ['name', 'name'], ['categoryId', 'category_id'], ['unit', 'unit'], ['step', 'step'], ['lowAt', 'low_at'], ['track', 'track'],
+  products: [['id', 'id'], ['name', 'name'], ['categoryId', 'category_id'], ['unit', 'unit'], ['step', 'step'], ['lowAt', 'low_at'], ['track', 'track'], ['maxQty', 'max_qty'],
     ['priceCents', 'price_cents'], ['active', 'active'], ['sort', 'sort']],
 }
 const NUMERIC = new Set(['qty', 'step', 'low_at'])

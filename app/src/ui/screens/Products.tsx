@@ -46,6 +46,7 @@ function ProductForm({ me, product, cats, costCents, nextSort, onClose }:
   const [low, setLow] = useState(String(product?.lowAt ?? 3))
   const [active, setActive] = useState(product?.active ?? true)
   const [track, setTrack] = useState(product?.track ?? true)
+  const [maxQ, setMaxQ] = useState(product?.maxQty != null ? String(product.maxQty) : '')
   const [cost, setCost] = useState(costCents != null ? String(costCents / 100) : '')
   const [busy, setBusy] = useState(false)
   const boss = me.role === 'boss'
@@ -60,7 +61,7 @@ function ProductForm({ me, product, cats, costCents, nextSort, onClose }:
     if (boss && cost.trim() !== '' && costC == null) return toast('Type a cost, like 15')
     const p: Product = {
       id: product?.id ?? `${slug(name)}-${crypto.randomUUID().slice(0, 4)}`, name: name.trim(), categoryId: cat, unit,
-      step: unit === 'g' ? 0.5 : 1, lowAt, priceCents, active, track, sort: product?.sort ?? nextSort,
+      step: unit === 'g' ? 0.5 : 1, lowAt, priceCents, active, track, maxQty: maxQ.trim() ? parseQty(maxQ) : null, sort: product?.sort ?? nextSort,
     }
     setBusy(true)
     try {
@@ -96,6 +97,8 @@ function ProductForm({ me, product, cats, costCents, nextSort, onClose }:
         <div className="banner warnb">New price from now on. Sales already made keep {formatRand(product.priceCents)}.</div>}
       <label className="lbl" htmlFor="pf-low">Warn when stock is at or below</label>
       <input id="pf-low" inputMode="decimal" value={low} onChange={e => setLow(e.target.value)} />
+      <label className="lbl" htmlFor="pf-max">Most on display (e.g. jar holds 50) · leave empty for no limit</label>
+      <input id="pf-max" inputMode="decimal" value={maxQ} placeholder="No limit" onChange={e => setMaxQ(e.target.value)} />
       {boss && <>
         <label className="lbl" htmlFor="pf-cost">Cost price (R) · only you see this</label>
         <input id="pf-cost" inputMode="decimal" value={cost} placeholder="What you pay for it" onChange={e => setCost(e.target.value)} />

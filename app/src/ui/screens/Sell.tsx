@@ -6,8 +6,8 @@ import type { StaffMember } from '../../data/db'
 import { itemLines } from '../../domain/calc'
 import { formatQty, formatRand } from '../../domain/num'
 import type { ShiftData } from '../../domain/types'
-import { addToBasket, basketQty, basketTotal, removeFromBasket, type Basket, type PayMode } from '../basket'
-import { catLabel, ShiftStrip, useToast } from '../kit'
+import { addToBasket, basketQty, basketTotal, findDoubles, removeFromBasket, type Basket, type Double, type PayMode } from '../basket'
+import { catLabel, Sheet, ShiftStrip, useStaff, useToast } from '../kit'
 import { PaySheet } from '../PaySheet'
 import { SalesLog } from '../SalesLog'
 import { displayName } from '../../domain/calc'
@@ -32,6 +32,16 @@ export function Sell({ data, me }: { data: ShiftData; me: StaffMember }) {
   const [basket, setBasket] = useState<Basket>([])
   const [paying, setPaying] = useState<null | PayMode>(null)
   const [log, setLog] = useState(false)
+  const [check, setCheck] = useState<null | { mode: PayMode; doubles: Double[] }>(null)
+  const staff = useStaff()
+  // Before taking payment: was this maybe rung up already (on the other phone, or twice here)?
+  const pay = (mode: PayMode) => {
+    const doubles = findDoubles(basket, data.sales, me.id)
+    if (doubles.length) setCheck({ mode, doubles }); else setPaying(mode)
+  }
+  const ago = (s: number) => (s < 60 ? `${s} sec ago` : `${Math.round(s / 60)} min ago`)
+  const who = (id: string) => (staff.find(x => x.id === id)?.name ?? 'Someone').split(' ')[0]
+  const pname = (id: string) => products.find(x => x.id === id)?.name ?? id
   const total = basketTotal(basket, products)
   const last = [...data.sales].filter(s => !s.void && s.by === me.id).sort((a, b) => b.at.localeCompare(a.at))[0]
   const lastTotal = last ? Math.round(last.lines.reduce((a, l) => a + l.qty * l.unitCents, 0)) : 0
@@ -73,11 +83,21 @@ export function Sell({ data, me }: { data: ShiftData; me: StaffMember }) {
         </div>}
         <div className="btot"><span className="lbl">Total</span><b className="num">{formatRand(total)}</b></div>
         <div className="two">
-          <button className="blk primary" disabled={!basket.length} onClick={() => setPaying('cash')}>Cash</button>
-          <button className="blk primary" disabled={!basket.length} onClick={() => setPaying('card')}>Card</button>
+          <button className="blk primary" disabled={!basket.length} onClick={() => pay('cash')}>Cash</button>
+          <button className="blk primary" disabled={!basket.length} onClick={() => pay('card')}>Card</button>
         </div>
-        {basket.length > 0 && <button className="linkbtn" style={{ alignSelf: 'center' }} onClick={() => setPaying('split')}>Part cash, part card</button>}
+        {basket.length > 0 && <button className="linkbtn" style={{ alignSelf: 'center' }} onClick={() => pay('split')}>Part cash, part card</button>}
       </div>
+      {check && <Sheet title="Rung up already?" onClose={() => setCheck(null)}>
+        <div className="banner warnb">
+          {check.doubles.map((d, i) => <span key={i}>{d.mine
+            ? <>You sold <b>exactly this</b> {ago(d.secondsAgo)}.</>
+            : <><b>{who(d.by)}</b> sold <b>{pname(d.productId)}</b> {ago(d.secondsAgo)} on their phone.</>}</span>)}
+          <span>Only one of you should ring up each sale.</span>
+        </div>
+        <button className="blk primary" onClick={() => { const m = check.mode; setCheck(null); setPaying(m) }}>Yes, it’s a different customer</button>
+        <button className="blk badb" onClick={() => { setCheck(null); setBasket([]); toast('Not rung up again') }}>No, it’s the same sale. Cancel</button>
+      </Sheet>}
       {log && <SalesLog data={data} me={me} onClose={() => setLog(false)} />}
       {paying && <PaySheet total={total} mode0={paying} onClose={() => setPaying(null)} onPay={async payments => {
         await actions.recordSale(data.shift.id, me.id, basket, payments)

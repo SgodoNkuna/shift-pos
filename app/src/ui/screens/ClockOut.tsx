@@ -72,7 +72,8 @@ export function ClockOut({ data, me, onLocked }: { data: ShiftData; me: StaffMem
                       onBlur={e => { const v = e.target.value.trim(); actions.setCount(id, p.id, v === '' ? null : parseQty(v), me.id) }} />
                     {l.counted == null && <button className="linkbtn" aria-label={`${p.name} matches`} onClick={() => actions.setCount(id, p.id, l.expected, me.id)}>✓</button>}
                   </td>
-                  <td className="num small">{diffText(l.diff, l.diffCents, p.unit)}</td>
+                  <td className="num small">{diffText(l.diff, l.diffCents, p.unit)}
+                    {p.maxQty != null && (l.counted ?? l.expected) > p.maxQty && <div className="warn">jar max {formatQty(p, p.maxQty)}</div>}</td>
                 </tr>)
             })])}</tbody>
         </table></div>

@@ -12,7 +12,7 @@ export const CATALOG: Product[] = [
   { id: 'cadillac', name: 'Cadillac', categoryId: 'main', unit: 'g', step: 0.5, lowAt: 1, priceCents: 12000, active: true, sort: 8 },
   { id: 'martian', name: 'Martian F', categoryId: 'main', unit: 'g', step: 0.5, lowAt: 1, priceCents: 15000, active: true, sort: 9 },
   { id: 'grapeballs', name: 'Grape Balls', categoryId: 'main', unit: 'g', step: 0.5, lowAt: 1, priceCents: 15000, active: true, sort: 10 },
-  { id: 'gummies', name: 'Gummies', categoryId: 'main', unit: 'ea', step: 1, lowAt: 3, priceCents: 3000, active: true, sort: 11 },
+  { id: 'gummies', maxQty: 50, name: 'Gummies', categoryId: 'main', unit: 'ea', step: 1, lowAt: 3, priceCents: 3000, active: true, sort: 11 },
   { id: 'kings', name: 'Kings', categoryId: 'main', unit: 'ea', step: 1, lowAt: 3, priceCents: 25000, active: true, sort: 12 },
   { id: 'coke', name: 'Coke', categoryId: 'drinks', unit: 'ea', step: 1, lowAt: 3, priceCents: 2000, active: true, sort: 13 },
   { id: 'sprite', name: 'Sprite', categoryId: 'drinks', unit: 'ea', step: 1, lowAt: 3, priceCents: 2000, active: true, sort: 14 },

@@ -28,3 +28,26 @@ export function paymentsFor(mode: PayMode, totalCents: number, cardCents = 0): P
   const card = Math.min(cardCents, totalCents)
   return [{ method: 'card', cents: card }, { method: 'cash', cents: totalCents - card }]
 }
+
+export interface Double { productId: string; by: string; secondsAgo: number; mine: boolean }
+
+/**
+ * Was this basket maybe rung up already? Someone else sold one of these items in the last 3 minutes,
+ * or this person sold exactly this basket in the last 90 seconds.
+ */
+export function findDoubles(b: Basket, sales: { by: string; at: string; void?: unknown; lines: { productId: string; qty: number }[] }[], meId: string, now = Date.now()): Double[] {
+  const out: Double[] = []
+  const key = (ls: { productId: string; qty: number }[]) => ls.map(l => `${l.productId}:${l.qty}`).sort().join('|')
+  for (const s of sales) {
+    if (s.void) continue
+    const ago = Math.round((now - new Date(s.at).getTime()) / 1000)
+    if (ago < 0) continue
+    if (s.by !== meId && ago <= 180) {
+      for (const l of b) if (s.lines.some(x => x.productId === l.productId) && !out.some(o => o.productId === l.productId && o.by === s.by))
+        out.push({ productId: l.productId, by: s.by, secondsAgo: ago, mine: false })
+    } else if (s.by === meId && ago <= 90 && key(s.lines) === key(b)) {
+      out.push({ productId: b[0].productId, by: meId, secondsAgo: ago, mine: true })
+    }
+  }
+  return out.sort((a, c) => a.secondsAgo - c.secondsAgo)
+}

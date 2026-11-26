@@ -15,6 +15,8 @@ export interface Product {
   sort?: number
   /** false = a service like hubbly hire: sold on the till but no stock to count. */
   track?: boolean
+  /** Most that may be on display (e.g. the edibles jar holds 50). Extra stock stays in storage. */
+  maxQty?: number | null
 }
 
 export interface SaleLine { productId: string; qty: number; unitCents: number }
