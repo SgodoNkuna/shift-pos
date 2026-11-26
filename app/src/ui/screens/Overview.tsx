@@ -3,7 +3,7 @@ import { db } from '../../app/store'
 import type { StaffMember } from '../../data/db'
 import { shiftTotals } from '../../domain/calc'
 import { formatRand } from '../../domain/num'
-import { Header, useShiftData, useStaff } from '../kit'
+import { Header, saleCents, sellerColor, ShiftStrip, useShiftData, useStaff } from '../kit'
 import { OutCard } from './StockOut'
 import { AlertsCard } from '../Alerts'
 import { supabase } from '../../sync/client'
@@ -22,9 +22,9 @@ export function Overview({ me, onStartShift, onOpenReport, onReports }: { me: St
   const t = data && shiftTotals(data)
   const pending = data?.moves.filter(m => m.kind === 'out' && m.status === 'pending') ?? []
   const feed = data ? [
-    ...data.sales.map(s => ({ at: s.at, text: `${s.void ? 'Voided sale' : 'Sale'} ${formatRand(Math.round(s.lines.reduce((a, l) => a + l.qty * l.unitCents, 0)))}` })),
-    ...data.moves.map(m => ({ at: m.decidedAt ?? m.at, text: `Stock ${m.kind} ${m.qty} ${data.products.find(p => p.id === m.productId)?.name ?? ''} · ${m.status}` })),
-    ...data.expenses.map(e => ({ at: e.at, text: `Expense ${formatRand(e.cents)} · ${e.note}` })),
+    ...data.sales.map(s => ({ at: s.at, by: s.by, text: `${s.void ? 'Voided sale' : 'Sale'} ${formatRand(saleCents(s))} · ${name(s.by).split(' ')[0]}` })),
+    ...data.moves.map(m => ({ at: m.decidedAt ?? m.at, by: m.by, text: `Stock ${m.kind} ${m.qty} ${data.products.find(p => p.id === m.productId)?.name ?? ''} · ${m.status}` })),
+    ...data.expenses.map(e => ({ at: e.at, by: e.by, text: `Expense ${formatRand(e.cents)} · ${e.note}` })),
   ].sort((a, b) => b.at.localeCompare(a.at)).slice(0, 10) : []
   return (
     <div className="main enter">
@@ -36,6 +36,7 @@ export function Overview({ me, onStartShift, onOpenReport, onReports }: { me: St
         {open && data && t ? <>
           <div className="req"><div className="top"><b>{open.kind === 'day' ? 'Day' : 'Night'} shift · {open.date}</b><span className="pill done">open</span></div>
             <div className="muted small">{[open.openedBy, ...(open.helpers ?? [])].map(name).join(' + ')} since {time(open.openedAt)}</div></div>
+          <ShiftStrip data={data} flush />
           <div className="two">
             <div className="block"><div className="lbl">Sales so far</div><b className="num" style={{ fontSize: 26, color: 'var(--accent)' }}>{formatRand(t.salesCents)}</b></div>
             <div className="block"><div className="lbl">Waiting on you</div><b className="num" style={{ fontSize: 26, color: pending.length ? 'var(--wait)' : 'var(--muted)' }}>{pending.length}</b></div>
@@ -44,7 +45,7 @@ export function Overview({ me, onStartShift, onOpenReport, onReports }: { me: St
           </div>
           {pending.map(m => <OutCard key={m.id} m={m} data={data} me={me} />)}
           <div className="lbl">Activity</div>
-          <div className="grp">{feed.length ? feed.map((f, i) => <div className="row" key={i}><span className="num muted">{time(f.at)}</span><span style={{ flex: 1 }}>{f.text}</span></div>)
+          <div className="grp">{feed.length ? feed.map((f, i) => <div className="row" key={i}><span className="num muted">{time(f.at)}</span><span style={{ flex: 1 }}><span className="by" style={{ ['--c' as string]: sellerColor(open, f.by) }} />{f.text}</span></div>)
             : <span className="muted small">Nothing yet</span>}</div>
         </> : <>
           <div className="note">No shift is open right now.</div>

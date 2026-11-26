@@ -1,4 +1,4 @@
-// Generated from the 26 November shift sheets. Cooldrinks R25 (owner, 26 Nov). Water price not confirmed (R15).
+// Generated from the 26 November shift sheets. Cooldrinks R25 (owner, 26 Nov). Water R15 (owner, 26 Nov).
 import type { Product } from './types'
 
 export const CATALOG: Product[] = [

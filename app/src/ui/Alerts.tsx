@@ -26,7 +26,7 @@ export function AlertsCard({ me, compact = false }: { me: StaffMember; compact?:
     setBusy(true)
     try {
       const r = await sendTestAlert()
-      setNote(r.sent ? 'Sent. Google accepted it for this phone. If nothing pops up within a minute, Android is hiding it: long-press the Hash Lounge icon → App info → Notifications → Allow (and check Chrome’s notifications are on).'
+      setNote(r.sent ? `Sent to ${r.sent} ${r.sent === 1 ? 'phone' : 'phones or browsers'}. Google accepted it.` + ' If nothing pops up within a minute, Android is hiding it: long-press the Hash Lounge icon → App info → Notifications → Allow (and check Chrome’s notifications are on).'
         : r.gone ? 'This phone’s alert registration had expired and was removed. Tap Turn on alerts again.' : 'No phone with alerts found for you. Tap Turn on alerts.')
       if (!r.sent) setSt('off')
     }

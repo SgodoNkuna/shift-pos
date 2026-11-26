@@ -5,7 +5,7 @@ import { itemLines } from '../../domain/calc'
 import { formatQty, formatRand } from '../../domain/num'
 import type { ShiftData } from '../../domain/types'
 import { addToBasket, basketQty, basketTotal, removeFromBasket, type Basket, type PayMode } from '../basket'
-import { catLabel, useToast } from '../kit'
+import { catLabel, ShiftStrip, useToast } from '../kit'
 import { PaySheet } from '../PaySheet'
 import { displayName } from '../../domain/calc'
 
@@ -23,6 +23,7 @@ export function Sell({ data, me }: { data: ShiftData; me: StaffMember }) {
 
   return (
     <div className="main flex enter">
+      <ShiftStrip data={data} meId={me.id} />
       <div className="tabs" role="tablist">{cats.map(c =>
         <button key={c} role="tab" aria-selected={cat === c} className={`tab ${cat === c ? 'on' : ''}`} onClick={() => setCat(c)}>{catLabel(c)}</button>)}
       </div>

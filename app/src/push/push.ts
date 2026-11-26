@@ -21,7 +21,18 @@ export async function alertState(): Promise<AlertState> {
   if (Notification.permission === 'denied') return 'blocked'
   const reg = await navigator.serviceWorker.getRegistration()
   const sub = await reg?.pushManager.getSubscription()
-  return sub && Notification.permission === 'granted' ? 'on' : 'off'
+  if (!sub || Notification.permission !== 'granted') return 'off'
+  await saveSubscription(sub).catch(() => {})
+  return 'on'
+}
+
+/** Makes sure the shop knows this phone's alert address (it can be missing if alerts were turned on before joining). */
+async function saveSubscription(sub: PushSubscription): Promise<void> {
+  const staffId = await deviceStaffId()
+  if (!staffId || !supabase) return
+  const j = sub.toJSON() as { endpoint: string; keys: { p256dh: string; auth: string } }
+  const { error } = await supabase.from('push_subscriptions').upsert({ endpoint: j.endpoint, staff_id: staffId, p256dh: j.keys.p256dh, auth: j.keys.auth })
+  if (error) throw error
 }
 
 const keyBytes = (b64: string) => {
@@ -44,6 +55,8 @@ export async function turnOnAlerts(staffId: string): Promise<AlertState> {
 
 /** Buzzes this person's phones once so they know alerts work. */
 export async function sendTestAlert(): Promise<{ sent: number; gone: number; failed: number }> {
+  const sub = await (await navigator.serviceWorker.getRegistration())?.pushManager.getSubscription()
+  if (sub) await saveSubscription(sub)
   const { data } = await supabase!.auth.getSession()
   const res = await fetch(`${SUPABASE_URL}/functions/v1/notify`, {
     method: 'POST', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${data.session?.access_token ?? ''}`, 'Content-Type': 'application/json' }, body: '{}',

@@ -6,6 +6,7 @@ import { SHOP } from '../app/brand'
 import type { StaffMember } from '../data/db'
 import { createPinGuard, MAX_TRIES } from '../auth/pin'
 import type { ShiftData } from '../domain/types'
+import { formatRand } from '../domain/num'
 
 /* ---------- Toast ---------- */
 const ToastCtx = createContext<(msg: string) => void>(() => {})
@@ -113,4 +114,37 @@ export function BrandMark() {
   return SHOP.logo
     ? <div className="brandmark"><img src={SHOP.logo} alt={SHOP.name} width={104} height={104} /><span>{SHOP.markTop}</span></div>
     : <div className="mark"><span>{SHOP.markTop}</span>{SHOP.markMain}</div>
+}
+
+/* ---------- Who is on this shift ---------- */
+const SELLER_COLORS = ['var(--accent)', 'var(--ok)', 'var(--wait)', 'var(--warn)']
+export const saleCents = (s: { lines: { qty: number; unitCents: number }[] }) => Math.round(s.lines.reduce((a, l) => a + l.qty * l.unitCents, 0))
+export const shiftPeople = (shift: { openedBy: string; helpers?: string[] }) => [shift.openedBy, ...(shift.helpers ?? []).filter(h => h !== shift.openedBy)]
+export function sellerColor(shift: { openedBy: string; helpers?: string[] }, id: string): string {
+  const i = shiftPeople(shift).indexOf(id)
+  return SELLER_COLORS[(i < 0 ? 0 : i) % SELLER_COLORS.length]
+}
+
+/** One line showing everyone on the shift, what each has sold, and the shift total. Same on every phone. */
+export function ShiftStrip({ data, meId, flush }: { data: ShiftData; meId?: string; flush?: boolean }) {
+  const staff = useStaff()
+  const people = shiftPeople(data.shift)
+  const sold = (id: string) => data.sales.filter(s => !s.void && s.by === id).reduce((a, s) => a + saleCents(s), 0)
+  const total = data.sales.filter(s => !s.void).reduce((a, s) => a + saleCents(s), 0)
+  const full = (id: string) => staff.find(s => s.id === id)?.name ?? '?'
+  const firsts = people.map(id => full(id).split(' ')[0])
+  const first = (id: string) => { const f = full(id).split(' ')[0]; return firsts.filter(x => x === f).length > 1 ? full(id) : f }
+  return (
+    <div className="strip" style={flush ? { margin: 0 } : undefined} aria-label="People on this shift">
+      <div className="strip-top">
+        <span className="lbl">{data.shift.kind === 'day' ? 'Day' : 'Night'} shift · {people.length > 1 ? `${people.length} people, one shift` : 'one person'}</span>
+        <b className="num">{formatRand(total)}</b>
+      </div>
+      <div className="strip-people">{people.map(id =>
+        <span key={id} className="seller" style={{ ['--c' as string]: sellerColor(data.shift, id) }}>
+          <i />{first(id)}{id === meId ? ' (you)' : ''}{id === data.shift.openedBy && people.length > 1 ? ' · opened' : ''}
+          <b className="num">{formatRand(sold(id))}</b>
+        </span>)}
+      </div>
+    </div>)
 }
