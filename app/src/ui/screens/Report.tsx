@@ -6,7 +6,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { getMeta } from '../../app/store'
 import { formatQty, formatRand } from '../../domain/num'
 import type { ShiftData } from '../../domain/types'
-import { canShareFiles, shareFiles } from '../../report/share'
+import { downloadFiles, shareFiles } from '../../report/share'
 import { shareText } from '../../report/summary'
 import { reportFileName } from '../../report/names'
 import { catLabel, Header, useStaff, useToast } from '../kit'
@@ -21,22 +21,38 @@ export function Report({ data, me, onDone, autoSend = false }: { data: ShiftData
   const lines = itemLines(data)
   const flags = shiftFlags(data, names)
   const s = data.shift
+  // Make the files as soon as the report opens: a phone only opens the share sheet right after a tap,
+  // so the tap must not wait for the PDF to be built.
+  const [files, setFiles] = useState<File[] | null>(null)
+  const [fallback, setFallback] = useState(false)
+  const made = useRef<string | null>(null)
+  useEffect(() => {
+    const key = `${s.id}:${s.lockedAt}:${staff.length}`
+    if (!s.lockedAt || !staff.length || made.current === key) return
+    made.current = key
+    void (async () => {
+      try {
+        const [{ buildPdf }, { buildXlsx }] = await Promise.all([import('../../report/pdf'), import('../../report/xlsx')])
+        const logo = SHOP.logo ? await fetch(SHOP.logo).then(r => r.blob()).then(b => new Promise<string>(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result as string); fr.readAsDataURL(b) })).catch(() => undefined) : undefined
+        const pdf = new File([buildPdf(data, names, logo)], reportFileName(data, 'pdf'), { type: 'application/pdf' })
+        const xlsx = new File([await buildXlsx(data, names)], reportFileName(data, 'xlsx'), { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
+        setFiles([pdf, xlsx])
+      } catch { made.current = null; toast('Could not make the report files. Close the report and open it again.') }
+    })()
+  })
+  const text = shareText(data, me.name, names)
   const share = async () => {
+    if (!files) return toast('Still making the files. Tap again in a second.')
     setBusy(true)
     try {
-      const [{ buildPdf }, { buildXlsx }] = await Promise.all([import('../../report/pdf'), import('../../report/xlsx')])
-      const logo = SHOP.logo ? await fetch(SHOP.logo).then(r => r.blob()).then(b => new Promise<string>(ok => { const fr = new FileReader(); fr.onload = () => ok(fr.result as string); fr.readAsDataURL(b) })).catch(() => undefined) : undefined
-      const pdf = new File([buildPdf(data, names, logo)], reportFileName(data, 'pdf'), { type: 'application/pdf' })
-      const xlsx = new File([await buildXlsx(data, names)], reportFileName(data, 'xlsx'), { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })
-      const r = await shareFiles([pdf, xlsx], shareText(data, me.name, names))
+      const r = await shareFiles(files, text)
       if (r === 'shared') { await actions.markSent(s.id, me.id); toast('Sent') }
-      if (r === 'saved') { toast('Saved. Send both files in the WhatsApp group.'); await actions.markSent(s.id, me.id) }
-    } catch { toast('Could not share. Try again.') } finally { setBusy(false) }
+      else if (r === 'saved') { setFallback(true); toast('Files saved to Downloads'); await actions.markSent(s.id, me.id) }
+      else if (r === 'blocked') { setFallback(true); toast('The phone blocked sharing. Use the steps below.') }
+    } catch { setFallback(true); toast('Could not share. Use the steps below.') } finally { setBusy(false) }
   }
+  const saveFiles = async () => { if (files) { downloadFiles(files); toast('Files saved to Downloads'); await actions.markSent(s.id, me.id) } }
   const cats = [...new Set(data.products.map(p => p.categoryId))]
-  const tried = useRef(false)
-  // Lock & send: open WhatsApp sharing straight after locking, where the phone allows it.
-  useEffect(() => { if (autoSend && !tried.current && s.lockedAt && !s.sentAt && canShareFiles() && staff.length) { tried.current = true; void share() } })
   const costs: Record<string, number> = useLiveQuery(() => getMeta<Record<string, number>>('costs', {}), [], {})
   const pr = me.role === 'boss' ? profit(data, costs) : null
   const pname = (id: string) => { const p = data.products.find(x => x.id === id); return p ? displayName(p, data.products) : id }
@@ -80,7 +96,13 @@ export function Report({ data, me, onDone, autoSend = false }: { data: ShiftData
             </tbody></table> : <span className="muted small">Nothing sold yet.</span>}
           {pr.missing.length > 0 && <span className="warn small">No cost price yet for {pr.missing.map(pname).join(', ')}. Add it in Menu → Products &amp; prices.</span>}
         </div>}
-        <button className="blk primary" disabled={busy || !s.lockedAt} onClick={share}>{busy ? 'Making files…' : s.sentAt ? 'Send again' : 'Send to WhatsApp'}</button>
+        {autoSend && !s.sentAt && files && <div className="note">Report ready. Tap <b>Send to WhatsApp</b>.</div>}
+        <button className="blk primary" disabled={busy || !s.lockedAt} onClick={share}>{!files && s.lockedAt ? 'Making files…' : busy ? 'Opening…' : s.sentAt ? 'Send again' : 'Send to WhatsApp'}</button>
+        {fallback && <div className="banner warnb"><b>Send it another way</b>
+          <span>1. Save the two files to your phone.</span>
+          <button className="blk sm" disabled={!files} onClick={saveFiles}>Save PDF + spreadsheet</button>
+          <span>2. Open WhatsApp with the message, pick the group, then attach the two files from Downloads.</span>
+          <a className="blk sm" style={{ display: 'grid', placeItems: 'center', textDecoration: 'none' }} href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">Open WhatsApp</a></div>}
         <button className="blk ghost" onClick={onDone}>{me.role === 'employee' ? 'Done · sign out' : 'Done'}</button>
       </div>
     </div>
