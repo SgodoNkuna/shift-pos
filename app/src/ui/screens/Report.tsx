@@ -11,6 +11,7 @@ import { shareText } from '../../report/summary'
 import { reportFileName } from '../../report/names'
 import { catLabel, Header, useStaff, useToast } from '../kit'
 import { SHOP } from '../../app/brand'
+import { supabase } from '../../sync/client'
 
 export function Report({ data, me, onDone, autoSend = false }: { data: ShiftData; me: StaffMember; onDone: () => void; autoSend?: boolean }) {
   const toast = useToast()
@@ -25,6 +26,24 @@ export function Report({ data, me, onDone, autoSend = false }: { data: ShiftData
   // so the tap must not wait for the PDF to be built.
   const [files, setFiles] = useState<File[] | null>(null)
   const [fallback, setFallback] = useState(false)
+  // Links to the files kept online: work on every phone, even where saving or sharing files is blocked.
+  const [links, setLinks] = useState<null | 'busy' | 'failed' | { pdf: string; xlsx: string }>(null)
+  const makeLinks = async () => {
+    if (!files || !supabase) return setLinks('failed')
+    setLinks('busy')
+    try {
+      const urls: string[] = []
+      for (const f of files) {
+        const path = `${s.id}/${f.name}`
+        const up = await supabase.storage.from('reports').upload(path, f, { upsert: true, contentType: f.type })
+        if (up.error) throw up.error
+        const sig = await supabase.storage.from('reports').createSignedUrl(path, 60 * 60 * 24 * 30, { download: f.name })
+        if (sig.error || !sig.data) throw sig.error
+        urls.push(sig.data.signedUrl)
+      }
+      setLinks({ pdf: urls[0], xlsx: urls[1] })
+    } catch { setLinks('failed'); toast('Could not make the links. Check the internet.') }
+  }
   const made = useRef<string | null>(null)
   useEffect(() => {
     const key = `${s.id}:${s.lockedAt}:${staff.length}`
@@ -98,11 +117,16 @@ export function Report({ data, me, onDone, autoSend = false }: { data: ShiftData
         </div>}
         {autoSend && !s.sentAt && files && <div className="note">Report ready. Tap <b>Send to WhatsApp</b>.</div>}
         <button className="blk primary" disabled={busy || !s.lockedAt} onClick={share}>{!files && s.lockedAt ? 'Making files…' : busy ? 'Opening…' : s.sentAt ? 'Send again' : 'Send to WhatsApp'}</button>
+        {!fallback && s.lockedAt && <button className="linkbtn" style={{ alignSelf: 'center' }} onClick={() => setFallback(true)}>Problems sending? Send a link instead</button>}
         {fallback && <div className="banner warnb"><b>Send it another way</b>
-          <span>1. Save the two files to your phone.</span>
-          <button className="blk sm" disabled={!files} onClick={saveFiles}>Save PDF + spreadsheet</button>
-          <span>2. Open WhatsApp with the message, pick the group, then attach the two files from Downloads.</span>
-          <a className="blk sm" style={{ display: 'grid', placeItems: 'center', textDecoration: 'none' }} href={`https://wa.me/?text=${encodeURIComponent(text)}`} target="_blank" rel="noreferrer">Open WhatsApp</a></div>}
+          <span>Send links to the report instead of the files. The links work for 30 days.</span>
+          {links && typeof links === 'object'
+            ? <a className="blk sm primary" style={{ display: 'grid', placeItems: 'center', textDecoration: 'none' }} target="_blank" rel="noreferrer"
+                onClick={() => void actions.markSent(s.id, me.id)}
+                href={`https://wa.me/?text=${encodeURIComponent(`${text}\nReport (PDF): ${links.pdf}\nSpreadsheet: ${links.xlsx}`)}`}>Open WhatsApp with the links</a>
+            : <button className="blk sm primary" disabled={!files || links === 'busy'} onClick={makeLinks}>{links === 'busy' ? 'Making links…' : 'Make links to the report'}</button>}
+          <span className="muted small">Or save the files to this phone and attach them in WhatsApp:</span>
+          <button className="blk sm" disabled={!files} onClick={saveFiles}>Save PDF + spreadsheet</button></div>}
         <button className="blk ghost" onClick={onDone}>{me.role === 'employee' ? 'Done · sign out' : 'Done'}</button>
       </div>
     </div>
