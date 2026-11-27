@@ -3,7 +3,7 @@ import { useLiveQuery } from 'dexie-react-hooks'
 import { actions, db, getMeta, nextOpening } from '../../app/store'
 import type { StaffMember } from '../../data/db'
 import { displayName } from '../../domain/calc'
-import { formatQty, formatRand, parseQty, shiftFor } from '../../domain/num'
+import { formatQty, formatRand, parseQty, parseRand, shiftFor } from '../../domain/num'
 import { catLabel, Header, useToast } from '../kit'
 import { AlertsCard } from '../Alerts'
 import { deviceStaffId, supabase } from '../../sync/client'
@@ -14,7 +14,11 @@ export function ClockIn({ me }: { me: StaffMember }) {
   const toast = useToast()
   const products = useLiveQuery(() => db.products.toArray().then(ps => sortProducts(ps.filter(p => p.track !== false))), [], [])
   const next = useLiveQuery(() => nextOpening(), [])
-  const floatCents = useLiveQuery(() => getMeta<number>('floatCents', 0), [], 0)
+  const settingFloat = useLiveQuery(() => getMeta<number>('floatCents', 0), [], 0)
+  // The float is the cash the last shift left in the drawer (what it counted at close), unless someone types another amount.
+  const leftCents = useLiveQuery(async () => (await db.shifts.toArray()).filter(s => s.lockedAt).sort((a, b) => b.lockedAt!.localeCompare(a.lockedAt!))[0]?.cashCountedCents ?? null, [], null)
+  const [typedFloat, setTypedFloat] = useState<number | null>(null)
+  const floatCents = typedFloat ?? leftCents ?? settingFloat
   const { kind, date } = shiftFor(new Date())
   const cats = categoryOrder(products)
   const [otherOpen, setOtherOpen] = useState<string | null>(null)
@@ -62,7 +66,10 @@ export function ClockIn({ me }: { me: StaffMember }) {
                 </div>)
             })}
           </div>))}
-        <div className="row big"><span>Cash float in the drawer</span><b className="num">{formatRand(floatCents)}</b></div>
+        <label className="lbl" htmlFor="ci-float">Cash in the drawer now (your float)</label>
+        <input id="ci-float" inputMode="decimal" placeholder="R" key={`f:${leftCents}`} defaultValue={floatCents ? floatCents / 100 : ''}
+          onBlur={e => { const v = e.target.value.trim(); setTypedFloat(v === '' ? null : parseRand(v)) }} />
+        <span className="muted small">{leftCents != null ? `The last shift left ${formatRand(leftCents)}. ` : ''}If cash was taken out at handover, count the drawer and type what is really there.</span>
         {changed.length > 0 && <div className="banner warnb">{changed.length} count{changed.length > 1 ? 's' : ''} changed. This goes on the shift report with your name.</div>}
         {otherOpen && <div className="banner warnb"><b>{otherOpen}’s shift is still open.</b>
           Working together now? Join it and you both sell into the same shift. Taking over? Count together, {otherOpen} locks it with your PIN, then clock in.
